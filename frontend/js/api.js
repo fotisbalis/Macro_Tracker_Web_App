@@ -35,6 +35,10 @@ export function analyzeFood(payload) {
     return request("/foods/analyze", { method: "POST", body: JSON.stringify(payload) });
 }
 
+export function addManualFood(payload) {
+    return request("/foods/manual", { method: "POST", body: JSON.stringify(payload) });
+}
+
 export function deleteFood(entryId) {
     return request(`/foods/${encodeURIComponent(entryId)}`, { method: "DELETE" });
 }

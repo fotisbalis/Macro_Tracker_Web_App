@@ -5,6 +5,7 @@
 - SQLAlchemy persistence;
 - cookie-based guest and signed-user sessions;
 - Home, Archive, and User pages;
+- manual meal entry that bypasses the AI provider;
 - replaceable AI service boundary.
 
 The current `MockAIService` returns intentionally random macro estimates. These values are placeholders and must not be treated as nutrition advice.

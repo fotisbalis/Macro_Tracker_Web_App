@@ -70,6 +70,33 @@
                             <span>grams</span>
                         </div>
 
+                        <button id="manual-entry-toggle" class="manual-entry-toggle" type="button" aria-expanded="false" aria-controls="manual-macro-panel">
+                            <span>Enter macros manually</span>
+                            <span class="manual-toggle-icon" aria-hidden="true">+</span>
+                        </button>
+
+                        <div id="manual-macro-panel" class="manual-macro-panel" hidden>
+                            <div>
+                                <p class="eyebrow">Manual entry</p>
+                                <p class="manual-panel-copy">These values will be saved directly without using the AI. Food name and quantity are optional.</p>
+                            </div>
+                            <div class="manual-macro-grid">
+                                <label for="manual-calories">Calories
+                                    <span class="macro-input-field"><input id="manual-calories" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" disabled><small>kcal</small></span>
+                                </label>
+                                <label for="manual-protein">Protein
+                                    <span class="macro-input-field"><input id="manual-protein" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" disabled><small>g</small></span>
+                                </label>
+                                <label for="manual-carbs">Carbs
+                                    <span class="macro-input-field"><input id="manual-carbs" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" disabled><small>g</small></span>
+                                </label>
+                                <label for="manual-fat">Fat
+                                    <span class="macro-input-field"><input id="manual-fat" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" disabled><small>g</small></span>
+                                </label>
+                            </div>
+                            <p class="manual-default-note">If left empty, the meal name is generated as <code>manual_meal_uuid</code> and quantity is saved as 0g.</p>
+                        </div>
+
                         <button id="analyze-button" class="primary-button" type="submit">
                             <span>Calculate and add</span>
                             <span aria-hidden="true">→</span>

@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DatabaseSession
@@ -8,14 +9,14 @@ try:
     from .dependencies import get_or_create_context
     from .food_data import calculate_totals, serialize_entry, targets_payload
     from .models import FoodEntry
-    from .schemas import FoodEntryCreate
+    from .schemas import FoodEntryCreate, ManualFoodEntryCreate
     from .services.mock_ai import ai_service
 except ImportError:
     from database import get_db
     from dependencies import get_or_create_context
     from food_data import calculate_totals, serialize_entry, targets_payload
     from models import FoodEntry
-    from schemas import FoodEntryCreate
+    from schemas import FoodEntryCreate, ManualFoodEntryCreate
     from services.mock_ai import ai_service
 
 
@@ -62,6 +63,42 @@ async def analyze_food(
     }
 
 
+@router.post("/foods/manual")
+def add_manual_food(
+    payload: ManualFoodEntryCreate,
+    context=Depends(get_or_create_context),
+    db: DatabaseSession = Depends(get_db),
+):
+    session, user = context
+    food_name = payload.food_name or f"manual_meal_{uuid4()}"
+    quantity = payload.quantity if payload.quantity is not None else 0.0
+
+    entry = FoodEntry(
+        session_id=session.session_id,
+        user_id=user.user_id,
+        food_name=food_name,
+        quantity=quantity,
+        unit="g",
+        calories=payload.calories,
+        protein=payload.protein,
+        carbs=payload.carbs,
+        fat=payload.fat,
+        source="manual",
+        logged_on=payload.logged_on or date.today(),
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+
+    day_entries = entries_for_day(db, user.user_id, entry.logged_on)
+    return {
+        "message": f"Added manual meal {entry.food_name}.",
+        "entry": serialize_entry(entry),
+        "totals": calculate_totals(day_entries),
+        "targets": targets_payload(user),
+    }
+
+
 @router.get("/days/today")
 def get_today(
     context=Depends(get_or_create_context),
@@ -96,4 +133,3 @@ def delete_food(
     db.commit()
     entries = entries_for_day(db, user.user_id, selected_date)
     return {"message": "Food removed", "totals": calculate_totals(entries)}
-

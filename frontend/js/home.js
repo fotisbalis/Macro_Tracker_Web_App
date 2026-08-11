@@ -1,4 +1,4 @@
-import { analyzeFood, deleteFood, getToday } from "./api.js";
+import { addManualFood, analyzeFood, deleteFood, getToday } from "./api.js";
 import { showToast } from "./feedback.js";
 
 const macroSummary = document.getElementById("macro-summary");
@@ -8,6 +8,17 @@ const todayLabel = document.getElementById("today-label");
 const form = document.getElementById("food-form");
 const analyzeButton = document.getElementById("analyze-button");
 const latestResult = document.getElementById("latest-result");
+const foodNameInput = document.getElementById("food-name");
+const quantityInput = document.getElementById("food-quantity");
+const manualToggle = document.getElementById("manual-entry-toggle");
+const manualPanel = document.getElementById("manual-macro-panel");
+const manualInputs = [
+    document.getElementById("manual-calories"),
+    document.getElementById("manual-protein"),
+    document.getElementById("manual-carbs"),
+    document.getElementById("manual-fat"),
+];
+let manualMode = false;
 
 const macroConfig = [
     ["calories", "Calories", "kcal"],
@@ -55,8 +66,10 @@ function createEntryCard(entry) {
     const text = document.createElement("div");
     const title = document.createElement("h3");
     title.textContent = entry.food_name;
+    title.title = entry.food_name;
     const subtitle = document.createElement("p");
-    subtitle.textContent = `${entry.quantity} ${entry.unit} · mock estimate`;
+    const sourceLabel = entry.source === "manual" ? "manual entry" : "mock estimate";
+    subtitle.textContent = `${entry.quantity} ${entry.unit} | ${sourceLabel}`;
     text.append(title, subtitle);
     identity.append(initial, text);
 
@@ -112,25 +125,52 @@ function showLatest(entry) {
         <div><strong>${entry.calories} kcal added</strong><p>${entry.protein}g protein · ${entry.carbs}g carbs · ${entry.fat}g fat</p></div>`;
 }
 
+function setManualMode(enabled) {
+    manualMode = enabled;
+    manualPanel.hidden = !enabled;
+    manualToggle.setAttribute("aria-expanded", String(enabled));
+    manualToggle.querySelector(".manual-toggle-icon").textContent = enabled ? "−" : "+";
+    foodNameInput.required = !enabled;
+    quantityInput.required = !enabled;
+    quantityInput.min = enabled ? "0" : "1";
+    manualInputs.forEach((input) => {
+        input.disabled = !enabled;
+        input.required = enabled;
+    });
+    analyzeButton.querySelector("span").textContent = enabled ? "Add manual meal" : "Calculate and add";
+}
+
 export function initHome() {
+    manualToggle.addEventListener("click", () => setManualMode(!manualMode));
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         analyzeButton.disabled = true;
-        analyzeButton.querySelector("span").textContent = "Calculating…";
+        analyzeButton.querySelector("span").textContent = manualMode ? "Adding meal..." : "Calculating...";
         try {
-            const data = await analyzeFood({
-                food_name: document.getElementById("food-name").value,
-                quantity: Number(document.getElementById("food-quantity").value),
-            });
+            const data = manualMode
+                ? await addManualFood({
+                    food_name: foodNameInput.value.trim() || null,
+                    quantity: quantityInput.value === "" ? 0 : Number(quantityInput.value),
+                    calories: Number(manualInputs[0].value),
+                    protein: Number(manualInputs[1].value),
+                    carbs: Number(manualInputs[2].value),
+                    fat: Number(manualInputs[3].value),
+                })
+                : await analyzeFood({
+                    food_name: foodNameInput.value,
+                    quantity: Number(quantityInput.value),
+                });
             showLatest(data.entry);
             form.reset();
+            setManualMode(false);
             await loadToday();
             showToast(data.message);
         } catch (error) {
             showToast(error.message, "error");
         } finally {
             analyzeButton.disabled = false;
-            analyzeButton.querySelector("span").textContent = "Calculate and add";
+            analyzeButton.querySelector("span").textContent = manualMode ? "Add manual meal" : "Calculate and add";
         }
     });
 
@@ -148,4 +188,3 @@ export function initHome() {
         }
     });
 }
-

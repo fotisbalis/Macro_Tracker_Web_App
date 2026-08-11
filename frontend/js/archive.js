@@ -32,7 +32,8 @@ function createDay(day) {
         const row = document.createElement("div");
         row.className = "archive-entry";
         const name = document.createElement("span");
-        name.innerHTML = `<strong></strong><small>${entry.quantity}${entry.unit}</small>`;
+        const sourceLabel = entry.source === "manual" ? "manual entry" : "mock estimate";
+        name.innerHTML = `<strong></strong><small>${entry.quantity}${entry.unit} | ${sourceLabel}</small>`;
         name.querySelector("strong").textContent = entry.food_name;
         const macros = document.createElement("span");
         macros.textContent = `${entry.calories} kcal · P ${entry.protein}g · C ${entry.carbs}g · F ${entry.fat}g`;
@@ -63,4 +64,3 @@ export async function loadArchive() {
         showToast(error.message, "error");
     }
 }
-

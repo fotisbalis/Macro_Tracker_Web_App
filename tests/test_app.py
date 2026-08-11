@@ -56,6 +56,33 @@ def test_guest_food_archive_targets_and_delete_flow():
     assert client.get("/days/today").json()["entries"] == []
 
 
+def test_manual_food_uses_defaults_and_bypasses_ai(monkeypatch):
+    async def fail_if_called(_food_name, _quantity):
+        raise AssertionError("The AI service must not be called for manual entries")
+
+    monkeypatch.setattr("backend.foods.ai_service.analyze_food", fail_if_called)
+    client = TestClient(app)
+
+    added = client.post("/foods/manual", json={
+        "food_name": "",
+        "calories": 640,
+        "protein": 42.5,
+        "carbs": 71,
+        "fat": 18.2,
+    })
+
+    assert added.status_code == 200
+    entry = added.json()["entry"]
+    assert entry["food_name"].startswith("manual_meal_")
+    assert entry["quantity"] == 0
+    assert entry["unit"] == "g"
+    assert entry["source"] == "manual"
+    assert entry["calories"] == 640
+    assert entry["protein"] == 42.5
+    assert entry["carbs"] == 71
+    assert entry["fat"] == 18.2
+
+
 def test_signup_keeps_guest_entries(monkeypatch):
     sent_code = {}
 

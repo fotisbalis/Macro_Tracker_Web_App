@@ -15,6 +15,24 @@ class FoodEntryCreate(BaseModel):
         return " ".join(value.strip().split())
 
 
+class ManualFoodEntryCreate(BaseModel):
+    food_name: Optional[str] = Field(default=None, max_length=140)
+    quantity: Optional[float] = Field(default=0, ge=0, le=5000)
+    calories: float = Field(ge=0)
+    protein: float = Field(ge=0)
+    carbs: float = Field(ge=0)
+    fat: float = Field(ge=0)
+    logged_on: Optional[date] = None
+
+    @field_validator("food_name")
+    @classmethod
+    def normalize_optional_food_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = " ".join(value.strip().split())
+        return normalized or None
+
+
 class SignupRequest(BaseModel):
     user_name: str = Field(min_length=4, max_length=50)
     email: str = Field(min_length=5, max_length=255)

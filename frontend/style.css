@@ -472,6 +472,90 @@ input:focus {
     transform: translateY(-50%);
 }
 
+.manual-entry-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 160ms ease;
+}
+
+.manual-entry-toggle:hover,
+.manual-entry-toggle[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.manual-toggle-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.manual-macro-panel {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--panel-strong) 70%, transparent);
+}
+
+.manual-macro-panel[hidden] {
+    display: none;
+}
+
+.manual-panel-copy,
+.manual-default-note {
+    margin: 5px 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.manual-default-note code {
+    color: var(--text);
+}
+
+.manual-macro-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.manual-macro-grid label {
+    display: grid;
+    gap: 6px;
+    margin-top: 0;
+}
+
+.macro-input-field {
+    position: relative;
+    display: block;
+}
+
+.macro-input-field input {
+    padding-right: 46px;
+}
+
+.macro-input-field small {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    transform: translateY(-50%);
+}
+
 .primary-button,
 .secondary-button {
     display: inline-flex;
@@ -606,6 +690,11 @@ input:focus {
     align-items: center;
 }
 
+.food-identity > div {
+    min-width: 0;
+    overflow: hidden;
+}
+
 .food-initial {
     display: grid;
     width: 42px;
@@ -620,6 +709,7 @@ input:focus {
 }
 
 .food-identity h3 {
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -990,6 +1080,10 @@ input:focus {
     .profile-panel,
     .targets-panel {
         padding: 20px;
+    }
+
+    .manual-macro-grid {
+        grid-template-columns: 1fr 1fr;
     }
 
     .food-entry {
