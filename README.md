@@ -1,7 +1,5 @@
 # Macro Tracker MVP
 
-A lightweight macro-tracking web application based on the same overall structure as the SciDrones Waste Detector:
-
 - vanilla HTML, CSS, and modular JavaScript frontend;
 - FastAPI route modules;
 - SQLAlchemy persistence;
