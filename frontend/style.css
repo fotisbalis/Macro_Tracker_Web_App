@@ -515,6 +515,32 @@ input:focus {
     background: var(--panel-strong);
 }
 
+.text-button {
+    min-height: 38px;
+    padding: 6px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.text-button:hover {
+    color: var(--accent-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.code-input {
+    min-height: 58px;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: 0.42em;
+    text-align: center;
+}
+
 .latest-result {
     display: flex;
     gap: 12px;

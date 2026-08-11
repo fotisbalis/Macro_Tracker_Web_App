@@ -19,6 +19,7 @@ class SignupRequest(BaseModel):
     user_name: str = Field(min_length=4, max_length=50)
     email: str = Field(min_length=5, max_length=255)
     password: str = Field(min_length=8, max_length=72)
+    confirm_password: str = Field(min_length=8, max_length=72)
 
     @field_validator("user_name", "email")
     @classmethod
@@ -34,9 +35,37 @@ class SignupRequest(BaseModel):
         return normalized
 
 
+class SignupVerificationRequest(BaseModel):
+    challenge_id: str = Field(min_length=20)
+    verification_code: str = Field(pattern=r"^\d{6}$")
+
+
 class LoginRequest(BaseModel):
     email: str = Field(min_length=5, max_length=255)
     password: str = Field(min_length=8, max_length=72)
+
+
+class ForgotPasswordStartRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if "@" not in normalized or normalized.startswith("@") or normalized.endswith("@"):
+            raise ValueError("Enter a valid email address")
+        return normalized
+
+
+class ForgotPasswordVerificationRequest(BaseModel):
+    challenge_id: str = Field(min_length=20)
+    verification_code: str = Field(pattern=r"^\d{6}$")
+
+
+class ChangePasswordRequest(BaseModel):
+    reset_token: str = Field(min_length=20)
+    new_password: str = Field(min_length=8, max_length=72)
+    confirm_new_password: str = Field(min_length=8, max_length=72)
 
 
 class TargetUpdate(BaseModel):

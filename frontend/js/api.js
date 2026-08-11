@@ -47,6 +47,22 @@ export function signup(payload) {
     return request("/signup", { method: "POST", body: JSON.stringify(payload) });
 }
 
+export function verifySignup(payload) {
+    return request("/signup", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function requestPasswordReset(payload) {
+    return request("/login/forgot-password", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function verifyPasswordReset(payload) {
+    return request("/login/forgot-password/verify", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function changePassword(payload) {
+    return request("/login/change-password", { method: "POST", body: JSON.stringify(payload) });
+}
+
 export function logout() {
     return request("/logout", { method: "POST" });
 }
@@ -54,4 +70,3 @@ export function logout() {
 export function updateTargets(payload) {
     return request("/users/me/targets", { method: "PATCH", body: JSON.stringify(payload) });
 }
-

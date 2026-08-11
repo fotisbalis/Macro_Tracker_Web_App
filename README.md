@@ -21,6 +21,8 @@ Then open `http://127.0.0.1:8000`.
 
 For the same PostgreSQL setup used by the Waste Detector, copy `.env.example` to `.env`, replace `YOUR_PASSWORD`, and adjust the database name if needed. SQLite remains the zero-configuration fallback when `DATABASE_URL` is not set.
 
+Signup and password-reset verification use the SMTP settings in `.env`. Codes expire after five minutes and are stored in memory for this local version, so restarting the backend invalidates outstanding codes.
+
 ## Replace the mock AI
 
 The provider contract is in `backend/services/ai_service.py`, and the temporary implementation is in `backend/services/mock_ai.py`. A real provider only needs to return the validated `MacroResult` structure:

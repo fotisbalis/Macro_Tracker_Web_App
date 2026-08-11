@@ -4,6 +4,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test_macro_tracker.db"
 
 from fastapi.testclient import TestClient
 
+from backend import auth
 from backend.database import Base, engine
 from backend.main import app
 
@@ -55,15 +56,30 @@ def test_guest_food_archive_targets_and_delete_flow():
     assert client.get("/days/today").json()["entries"] == []
 
 
-def test_signup_keeps_guest_entries():
+def test_signup_keeps_guest_entries(monkeypatch):
+    sent_code = {}
+
+    def fake_send(_recipient, _user_name, code, purpose="signup"):
+        sent_code["code"] = code
+        sent_code["purpose"] = purpose
+
+    monkeypatch.setattr(auth, "send_verification_email", fake_send)
     client = TestClient(app)
     client.get("/session/user")
     client.post("/foods/analyze", json={"food_name": "Greek yogurt", "quantity": 200})
 
-    signup_response = client.post("/signup", json={
+    signup_started = client.post("/signup", json={
         "user_name": "macro_user",
         "email": "macro@example.com",
         "password": "strong-pass-123",
+        "confirm_password": "strong-pass-123",
+    })
+    assert signup_started.status_code == 200
+    assert sent_code["purpose"] == "signup"
+
+    signup_response = client.post("/signup", json={
+        "challenge_id": signup_started.json()["challenge_id"],
+        "verification_code": sent_code["code"],
     })
     assert signup_response.status_code == 200
     assert signup_response.json()["user"]["user_type"] == "signed"
@@ -80,4 +96,3 @@ def test_signup_keeps_guest_entries():
     assert login_response.status_code == 200
     assert login_response.json()["user"]["user_name"] == "macro_user"
     assert len(client.get("/days/today").json()["entries"]) == 1
-

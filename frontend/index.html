@@ -119,7 +119,7 @@
 
             <div class="user-grid">
                 <section id="guest-account-panel" class="panel auth-panel">
-                    <div class="tab-list" role="tablist" aria-label="Account actions">
+                    <div id="auth-tabs" class="tab-list" role="tablist" aria-label="Account actions">
                         <button id="show-login" class="tab-button active" type="button" role="tab" aria-selected="true">Log in</button>
                         <button id="show-signup" class="tab-button" type="button" role="tab" aria-selected="false">Create account</button>
                     </div>
@@ -132,6 +132,7 @@
                         <label for="login-password">Password</label>
                         <input id="login-password" type="password" minlength="8" maxlength="72" autocomplete="current-password" required>
                         <button class="primary-button" type="submit">Log in</button>
+                        <button id="show-forgot-password" class="text-button" type="button">Forgot your password?</button>
                     </form>
 
                     <form id="signup-form" class="account-form" hidden>
@@ -143,7 +144,51 @@
                         <input id="signup-email" type="email" autocomplete="email" required>
                         <label for="signup-password">Password</label>
                         <input id="signup-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+                        <label for="signup-confirm-password">Confirm password</label>
+                        <input id="signup-confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
                         <button class="primary-button" type="submit">Create account</button>
+                    </form>
+
+                    <form id="signup-verification-form" class="account-form" hidden>
+                        <p class="eyebrow">Check your inbox</p>
+                        <h2>Verify your email</h2>
+                        <p class="panel-copy">Enter the six-digit code we sent you. It expires in five minutes.</p>
+                        <label for="signup-verification-code">Verification code</label>
+                        <input id="signup-verification-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
+                        <button class="primary-button" type="submit">Verify account</button>
+                        <button class="text-button back-to-signup" type="button">Start again</button>
+                    </form>
+
+                    <form id="forgot-password-form" class="account-form" hidden>
+                        <p class="eyebrow">Account recovery</p>
+                        <h2>Reset your password</h2>
+                        <p class="panel-copy">Enter the email address connected to your account.</p>
+                        <label for="forgot-email">Email</label>
+                        <input id="forgot-email" type="email" autocomplete="email" required>
+                        <button class="primary-button" type="submit">Send verification code</button>
+                        <button class="text-button back-to-login" type="button">Back to login</button>
+                    </form>
+
+                    <form id="password-verification-form" class="account-form" hidden>
+                        <p class="eyebrow">Check your inbox</p>
+                        <h2>Enter your code</h2>
+                        <p class="panel-copy">The six-digit verification code expires in five minutes.</p>
+                        <label for="password-verification-code">Verification code</label>
+                        <input id="password-verification-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
+                        <button class="primary-button" type="submit">Continue</button>
+                        <button class="text-button restart-password-reset" type="button">Start again</button>
+                    </form>
+
+                    <form id="new-password-form" class="account-form" hidden>
+                        <p class="eyebrow">Final step</p>
+                        <h2>Choose a new password</h2>
+                        <p class="panel-copy">This will sign out any existing sessions for your account.</p>
+                        <label for="new-password">New password</label>
+                        <input id="new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+                        <label for="confirm-new-password">Confirm new password</label>
+                        <input id="confirm-new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+                        <button class="primary-button" type="submit">Change password</button>
+                        <button class="text-button back-to-login" type="button">Back to login</button>
                     </form>
                 </section>
 
@@ -175,4 +220,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
