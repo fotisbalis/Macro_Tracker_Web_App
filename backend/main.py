@@ -15,12 +15,14 @@ try:
     from .auth import router as auth_router
     from .database import initialize_database
     from .foods import router as foods_router
+    from .services.provider import get_ai_provider_name
     from .users import router as users_router
 except ImportError:
     from archive import router as archive_router
     from auth import router as auth_router
     from database import initialize_database
     from foods import router as foods_router
+    from services.provider import get_ai_provider_name
     from users import router as users_router
 
 
@@ -47,7 +49,7 @@ app.include_router(users_router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "ai_provider": "mock"}
+    return {"status": "ok", "ai_provider": get_ai_provider_name()}
 
 
 @app.get("/")

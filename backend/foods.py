@@ -10,14 +10,16 @@ try:
     from .food_data import calculate_totals, serialize_entry, targets_payload
     from .models import FoodEntry
     from .schemas import FoodEntryCreate, ManualFoodEntryCreate
-    from .services.mock_ai import ai_service
+    from .services.ai_service import AIServiceError
+    from .services.provider import ai_service
 except ImportError:
     from database import get_db
     from dependencies import get_or_create_context
     from food_data import calculate_totals, serialize_entry, targets_payload
     from models import FoodEntry
     from schemas import FoodEntryCreate, ManualFoodEntryCreate
-    from services.mock_ai import ai_service
+    from services.ai_service import AIServiceError
+    from services.provider import ai_service
 
 
 router = APIRouter(tags=["food entries"])
@@ -37,7 +39,16 @@ async def analyze_food(
     db: DatabaseSession = Depends(get_db),
 ):
     session, user = context
-    result = await ai_service.analyze_food(payload.food_name, payload.quantity)
+    try:
+        result = await ai_service.analyze_food(payload.food_name, payload.quantity)
+    except AIServiceError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "The AI could not estimate this meal. Please try again or enter "
+                "the macros manually."
+            ),
+        ) from exc
     result = result.model_copy(update={
         "food_name": payload.food_name,
         "quantity": payload.quantity,
@@ -95,6 +106,48 @@ def add_manual_food(
         "message": f"Added manual meal {entry.food_name}.",
         "entry": serialize_entry(entry),
         "totals": calculate_totals(day_entries),
+        "targets": targets_payload(user),
+    }
+
+
+@router.post("/foods/{entry_id}/add-to-today")
+def add_archived_food_to_today(
+    entry_id: int,
+    context=Depends(get_or_create_context),
+    db: DatabaseSession = Depends(get_db),
+):
+    session, user = context
+    archived_entry = db.query(FoodEntry).filter(
+        FoodEntry.entry_id == entry_id,
+        FoodEntry.user_id == user.user_id,
+    ).first()
+    if archived_entry is None:
+        raise HTTPException(status_code=404, detail="Food entry not found")
+    if archived_entry.logged_on >= date.today():
+        raise HTTPException(status_code=400, detail="Only meals from previous days can be added")
+
+    copied_entry = FoodEntry(
+        session_id=session.session_id,
+        user_id=user.user_id,
+        food_name=archived_entry.food_name,
+        quantity=archived_entry.quantity,
+        unit=archived_entry.unit,
+        calories=archived_entry.calories,
+        protein=archived_entry.protein,
+        carbs=archived_entry.carbs,
+        fat=archived_entry.fat,
+        source=archived_entry.source,
+        logged_on=date.today(),
+    )
+    db.add(copied_entry)
+    db.commit()
+    db.refresh(copied_entry)
+
+    today_entries = entries_for_day(db, user.user_id, date.today())
+    return {
+        "message": f"Added {copied_entry.food_name} to today's totals.",
+        "entry": serialize_entry(copied_entry),
+        "totals": calculate_totals(today_entries),
         "targets": targets_payload(user),
     }
 

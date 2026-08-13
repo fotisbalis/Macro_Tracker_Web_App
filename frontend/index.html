@@ -49,7 +49,10 @@
                     <h1 id="home-title">Track today, simply.</h1>
                     <p id="today-label" class="page-subtitle">Loading your day…</p>
                 </div>
-                <span class="provider-badge"><span class="status-dot"></span> Mock AI active</span>
+                <span id="ai-provider-badge" class="provider-badge">
+                    <span class="status-dot"></span>
+                    <span id="ai-provider-label">Checking AI status...</span>
+                </span>
             </header>
 
             <div id="macro-summary" class="macro-grid" aria-label="Today's macro totals"></div>
@@ -58,7 +61,7 @@
                 <section class="panel log-panel" aria-labelledby="log-food-title">
                     <p class="eyebrow">Quick entry</p>
                     <h2 id="log-food-title">What did you eat?</h2>
-                    <p class="panel-copy">Enter one food and its weight. The mock AI will return temporary macro estimates.</p>
+                    <p class="panel-copy">Enter one food and its weight. The AI will return a nutritional estimate.</p>
 
                     <form id="food-form" class="food-form">
                         <label for="food-name">Food name</label>

@@ -13,3 +13,6 @@ class AIService(ABC):
     async def analyze_food(self, food_name: str, quantity: float) -> MacroResult:
         raise NotImplementedError
 
+
+class AIServiceError(RuntimeError):
+    """A safe, provider-independent error raised when an estimate cannot be made."""

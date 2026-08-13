@@ -68,7 +68,9 @@ function createEntryCard(entry) {
     title.textContent = entry.food_name;
     title.title = entry.food_name;
     const subtitle = document.createElement("p");
-    const sourceLabel = entry.source === "manual" ? "manual entry" : "mock estimate";
+    const sourceLabel = entry.source === "manual"
+        ? "manual entry"
+        : entry.source === "mock_ai" ? "mock estimate" : "AI estimate";
     subtitle.textContent = `${entry.quantity} ${entry.unit} | ${sourceLabel}`;
     text.append(title, subtitle);
     identity.append(initial, text);

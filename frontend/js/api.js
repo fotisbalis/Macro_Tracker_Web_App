@@ -27,6 +27,7 @@ async function request(path, options = {}) {
 }
 
 export const getSession = () => request("/session/user");
+export const getHealth = () => request("/health");
 export const getToday = () => request("/days/today");
 export const getArchive = () => request("/archive");
 export const getUserStatistics = () => request("/users/me/statistics");
@@ -37,6 +38,10 @@ export function analyzeFood(payload) {
 
 export function addManualFood(payload) {
     return request("/foods/manual", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function addArchivedFoodToToday(entryId) {
+    return request(`/foods/${encodeURIComponent(entryId)}/add-to-today`, { method: "POST" });
 }
 
 export function deleteFood(entryId) {

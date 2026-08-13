@@ -30,7 +30,3 @@ class MockAIService(AIService):
             fat=round(fat, 1),
             source="mock_ai",
         )
-
-
-ai_service = MockAIService()
-

@@ -6,9 +6,9 @@
 - cookie-based guest and signed-user sessions;
 - Home, Archive, and User pages;
 - manual meal entry that bypasses the AI provider;
-- replaceable AI service boundary.
+- selectable mock or Qwen AI service behind one provider boundary.
 
-The current `MockAIService` returns intentionally random macro estimates. These values are placeholders and must not be treated as nutrition advice.
+The default `MockAIService` returns intentionally random macro estimates. These values are placeholders and must not be treated as nutrition advice. Qwen estimates are also approximations, not medical advice.
 
 ## Run locally
 
@@ -24,9 +24,21 @@ For the same PostgreSQL setup used by the Waste Detector, copy `.env.example` to
 
 Signup and password-reset verification use the SMTP settings in `.env`. Codes expire after five minutes and are stored in memory for this local version, so restarting the backend invalidates outstanding codes.
 
-## Replace the mock AI
+## Enable Qwen
 
-The provider contract is in `backend/services/ai_service.py`, and the temporary implementation is in `backend/services/mock_ai.py`. A real provider only needs to return the validated `MacroResult` structure:
+The Qwen integration uses Alibaba Model Studio's OpenAI-compatible Chat Completions API. In `.env`, add your private key and switch the provider:
+
+```dotenv
+AI_PROVIDER=qwen
+DASHSCOPE_API_KEY=your-private-api-key
+QWEN_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen3.5-flash
+QWEN_TIMEOUT_SECONDS=30
+```
+
+Restart FastAPI after changing `.env`. Set `AI_PROVIDER=mock` whenever you want local random estimates without API calls. Never place the real key in `.env.example`, source code, or Git.
+
+The provider contract is in `backend/services/ai_service.py`; implementations are in `backend/services/mock_ai.py` and `backend/services/qwen_ai.py`. Every provider returns the validated `MacroResult` structure:
 
 ```json
 {
@@ -37,6 +49,8 @@ The provider contract is in `backend/services/ai_service.py`, and the temporary 
   "protein": 77.5,
   "carbs": 0,
   "fat": 9,
-  "source": "provider_name"
+  "source": "qwen:qwen3.5-flash"
 }
 ```
+
+Qwen is called only by the AI estimate form. Manual meals and copies from the archive do not call the API.

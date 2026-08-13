@@ -856,9 +856,10 @@ input:focus {
 }
 
 .archive-entry {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) auto auto;
     gap: 20px;
+    align-items: center;
     padding: 15px 25px;
     border-bottom: 1px solid var(--line);
     color: var(--muted);
@@ -876,6 +877,34 @@ input:focus {
 
 .archive-entry strong {
     color: var(--text);
+}
+
+.archive-entry-macros {
+    white-space: nowrap;
+}
+
+.archive-add-button {
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 160ms ease;
+}
+
+.archive-add-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.archive-add-button:disabled {
+    cursor: default;
+    opacity: 0.68;
 }
 
 .tab-list {
@@ -1120,10 +1149,19 @@ input:focus {
     }
 
     .archive-entry {
-        align-items: flex-start;
-        flex-direction: column;
+        grid-template-columns: 1fr;
+        align-items: start;
         gap: 8px;
         padding: 14px 19px;
+    }
+
+    .archive-entry-macros {
+        white-space: normal;
+    }
+
+    .archive-add-button {
+        width: 100%;
+        margin-top: 4px;
     }
 }
 
