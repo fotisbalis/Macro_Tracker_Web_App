@@ -10,6 +10,7 @@ const analyzeButton = document.getElementById("analyze-button");
 const latestResult = document.getElementById("latest-result");
 const foodNameInput = document.getElementById("food-name");
 const quantityInput = document.getElementById("food-quantity");
+const quantityOptionalLabel = document.getElementById("quantity-optional-label");
 const manualToggle = document.getElementById("manual-entry-toggle");
 const manualPanel = document.getElementById("manual-macro-panel");
 const manualMacroModeButtons = document.querySelectorAll("[data-manual-macro-mode]");
@@ -152,6 +153,7 @@ function setManualMacroMode(per100) {
     manualPanelCopy.textContent = per100
         ? "These values will be saved directly without using the AI. Quantity is required and totals are calculated automatically."
         : "These values will be saved directly without using the AI. Food name and quantity are optional.";
+    quantityOptionalLabel.hidden = manualMode && per100;
     quantityInput.required = manualMode && per100;
     quantityInput.min = manualMode && per100 ? "1" : manualMode ? "0" : "1";
 }
