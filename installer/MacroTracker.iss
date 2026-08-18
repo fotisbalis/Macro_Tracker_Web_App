@@ -1,13 +1,13 @@
 [Setup]
 AppId={{3D3050EA-4F2F-4EAF-9A11-BD05C2B8F2F7}
 AppName=Macro Tracker
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=Macro Tracker
 DefaultDirName={localappdata}\Programs\Macro Tracker
 DefaultGroupName=Macro Tracker
 PrivilegesRequired=lowest
 OutputDir=output
-OutputBaseFilename=MacroTracker-Setup-1.0.0
+OutputBaseFilename=MacroTracker-Setup-1.0.1
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
