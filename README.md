@@ -1,6 +1,6 @@
 # Macro Tracker
 
-A local macro-tracking desktop app with:
+A local macro-tracking desktop-web app with:
 
 - an embedded local SQLite database
 - manual meal entry and optional ChatGPT-powered macro estimates.
@@ -9,7 +9,7 @@ A local macro-tracking desktop app with:
 
 ## Windows installer
 
-Got to the releases page and click the latest MacroTracker-Setup-<#version>.exe
+Got to the releases page and click the latest MacroTracker-Setup-<x.x.x>.exe
 
 ## Run locally
 
