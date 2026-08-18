@@ -412,23 +412,159 @@ h3 {
     box-shadow: var(--shadow);
 }
 
+.profile-gate {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    min-height: 100vh;
+    padding: 56px 24px;
+    place-items: center;
+}
+
+.profile-gate-shell {
+    width: min(1040px, 100%);
+}
+
+.profile-gate-heading {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.profile-gate-heading .logo-mark {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+    border-radius: 15px;
+    font-size: 1.1rem;
+}
+
+.profile-gate-heading h1 {
+    margin: 4px 0 8px;
+    font-size: clamp(2rem, 5vw, 3.7rem);
+}
+
+.profile-gate-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
+    gap: 22px;
+    align-items: stretch;
+}
+
+.profile-picker-panel,
+.create-profile-panel {
+    padding: 28px;
+}
+
+.create-profile-panel {
+    align-self: start;
+}
+
+.profile-list {
+    display: grid;
+    gap: 10px;
+    max-height: 420px;
+    margin-top: 22px;
+    overflow-y: auto;
+}
+
+.profile-choice {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) 24px;
+    gap: 13px;
+    align-items: center;
+    width: 100%;
+    min-height: 68px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--panel-strong) 72%, transparent);
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    transition: 160ms ease;
+}
+
+.profile-choice:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+}
+
+.profile-choice:disabled {
+    cursor: wait;
+    opacity: 0.64;
+}
+
+.profile-choice-initial {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 800;
+}
+
+.profile-choice-identity {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.profile-choice-identity strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-choice-identity small,
+.profile-list-empty span {
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.profile-choice-arrow {
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+
+.profile-list-empty {
+    display: grid;
+    gap: 7px;
+    min-height: 120px;
+    place-content: center;
+    text-align: center;
+}
+
+.create-profile-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.create-profile-form label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
 .log-panel,
 .today-panel,
-.auth-panel,
 .profile-panel,
 .targets-panel {
     padding: 28px;
 }
 
 .food-form,
-.account-form,
 .targets-form {
     display: grid;
     gap: 10px;
 }
 
-.food-form label,
-.account-form label {
+.food-form label {
     margin-top: 6px;
     color: var(--muted);
     font-size: 0.78rem;
@@ -907,33 +1043,6 @@ input:focus {
     opacity: 0.68;
 }
 
-.tab-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-    margin-bottom: 26px;
-    padding: 5px;
-    border-radius: 13px;
-    background: var(--panel-strong);
-}
-
-.tab-button {
-    min-height: 40px;
-    border: 0;
-    border-radius: 9px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.tab-button.active {
-    background: var(--panel);
-    color: var(--text);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
 .profile-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1024,6 +1133,10 @@ input:focus {
 }
 
 @media (max-width: 980px) {
+    .profile-gate-grid {
+        grid-template-columns: 1fr;
+    }
+
     .macro-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1105,9 +1218,32 @@ input:focus {
 
     .log-panel,
     .today-panel,
-    .auth-panel,
     .profile-panel,
     .targets-panel {
+        padding: 20px;
+    }
+
+    .profile-gate {
+        padding: 34px 12px;
+        place-items: start center;
+    }
+
+    .profile-gate-heading {
+        gap: 13px;
+        margin-bottom: 24px;
+    }
+
+    .profile-gate-heading .logo-mark {
+        width: 42px;
+        height: 42px;
+    }
+
+    .profile-gate-heading h1 {
+        font-size: clamp(2rem, 10vw, 3rem);
+    }
+
+    .profile-picker-panel,
+    .create-profile-panel {
         padding: 20px;
     }
 

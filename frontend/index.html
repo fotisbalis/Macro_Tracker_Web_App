@@ -21,7 +21,49 @@
     <div class="ambient ambient-one" aria-hidden="true"></div>
     <div class="ambient ambient-two" aria-hidden="true"></div>
 
-    <nav class="navbar" aria-label="Main navigation">
+    <section id="profile-gate" class="profile-gate" aria-labelledby="profile-gate-title">
+        <div class="profile-gate-shell">
+            <header class="profile-gate-heading">
+                <span class="logo-mark">M</span>
+                <div>
+                    <p class="eyebrow">Macro Tracker</p>
+                    <h1 id="profile-gate-title">Who is tracking today?</h1>
+                    <p class="page-subtitle">Choose a local profile or create a new one. No email or password is needed.</p>
+                </div>
+            </header>
+
+            <div class="profile-gate-grid">
+                <section class="panel profile-picker-panel" aria-labelledby="existing-profiles-title">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow">Local profiles</p>
+                            <h2 id="existing-profiles-title">Choose a user</h2>
+                        </div>
+                        <span id="profile-count" class="count-badge">0 users</span>
+                    </div>
+                    <div id="profile-list" class="profile-list" aria-live="polite">
+                        <p class="empty-state">Loading local profiles…</p>
+                    </div>
+                </section>
+
+                <section class="panel create-profile-panel" aria-labelledby="create-profile-title">
+                    <p class="eyebrow">New here</p>
+                    <h2 id="create-profile-title">Create a user</h2>
+                    <p class="panel-copy">Each user gets an independent food log, archive and set of daily targets on this device.</p>
+                    <form id="create-profile-form" class="create-profile-form">
+                        <label for="new-profile-name">User name</label>
+                        <input id="new-profile-name" type="text" minlength="1" maxlength="80" placeholder="e.g. Fotis" autocomplete="off" required>
+                        <button class="primary-button" type="submit">
+                            <span>Create and continue</span>
+                            <span aria-hidden="true">→</span>
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </section>
+
+    <nav id="app-navbar" class="navbar" aria-label="Main navigation" hidden>
         <a class="logo" href="#home" data-page="home" aria-label="Macro Tracker home">
             <span class="logo-mark">M</span>
             <span>Macro Tracker</span>
@@ -41,7 +83,7 @@
         </div>
     </nav>
 
-    <main>
+    <main id="app-shell" hidden>
         <section id="home" class="page active" aria-labelledby="home-title">
             <header class="page-heading">
                 <div>
@@ -140,94 +182,20 @@
         <section id="user" class="page" aria-labelledby="user-title">
             <header class="page-heading compact-heading">
                 <div>
-                    <p class="eyebrow">Account</p>
+                    <p class="eyebrow">Local profile</p>
                     <h1 id="user-title">Your profile</h1>
-                    <p class="page-subtitle">Save your history across sessions and set your daily goals.</p>
+                    <p class="page-subtitle">Review this user’s activity and set daily macro goals.</p>
                 </div>
-                <span id="user-type-badge" class="provider-badge">Guest</span>
+                <span id="user-type-badge" class="provider-badge">Local user</span>
             </header>
 
             <div class="user-grid">
-                <section id="guest-account-panel" class="panel auth-panel">
-                    <div id="auth-tabs" class="tab-list" role="tablist" aria-label="Account actions">
-                        <button id="show-login" class="tab-button active" type="button" role="tab" aria-selected="true">Log in</button>
-                        <button id="show-signup" class="tab-button" type="button" role="tab" aria-selected="false">Create account</button>
-                    </div>
-
-                    <form id="login-form" class="account-form">
-                        <h2>Welcome back</h2>
-                        <p class="panel-copy">Guest entries from this session will move into your account.</p>
-                        <label for="login-email">Email</label>
-                        <input id="login-email" type="email" autocomplete="email" required>
-                        <label for="login-password">Password</label>
-                        <input id="login-password" type="password" minlength="8" maxlength="72" autocomplete="current-password" required>
-                        <button class="primary-button" type="submit">Log in</button>
-                        <button id="show-forgot-password" class="text-button" type="button">Forgot your password?</button>
-                    </form>
-
-                    <form id="signup-form" class="account-form" hidden>
-                        <h2>Create your account</h2>
-                        <p class="panel-copy">Your current food log will be kept.</p>
-                        <label for="signup-name">Username</label>
-                        <input id="signup-name" type="text" minlength="4" maxlength="50" autocomplete="username" required>
-                        <label for="signup-email">Email</label>
-                        <input id="signup-email" type="email" autocomplete="email" required>
-                        <label for="signup-password">Password</label>
-                        <input id="signup-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
-                        <label for="signup-confirm-password">Confirm password</label>
-                        <input id="signup-confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
-                        <button class="primary-button" type="submit">Create account</button>
-                    </form>
-
-                    <form id="signup-verification-form" class="account-form" hidden>
-                        <p class="eyebrow">Check your inbox</p>
-                        <h2>Verify your email</h2>
-                        <p class="panel-copy">Enter the six-digit code we sent you. It expires in five minutes.</p>
-                        <label for="signup-verification-code">Verification code</label>
-                        <input id="signup-verification-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
-                        <button class="primary-button" type="submit">Verify account</button>
-                        <button class="text-button back-to-signup" type="button">Start again</button>
-                    </form>
-
-                    <form id="forgot-password-form" class="account-form" hidden>
-                        <p class="eyebrow">Account recovery</p>
-                        <h2>Reset your password</h2>
-                        <p class="panel-copy">Enter the email address connected to your account.</p>
-                        <label for="forgot-email">Email</label>
-                        <input id="forgot-email" type="email" autocomplete="email" required>
-                        <button class="primary-button" type="submit">Send verification code</button>
-                        <button class="text-button back-to-login" type="button">Back to login</button>
-                    </form>
-
-                    <form id="password-verification-form" class="account-form" hidden>
-                        <p class="eyebrow">Check your inbox</p>
-                        <h2>Enter your code</h2>
-                        <p class="panel-copy">The six-digit verification code expires in five minutes.</p>
-                        <label for="password-verification-code">Verification code</label>
-                        <input id="password-verification-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
-                        <button class="primary-button" type="submit">Continue</button>
-                        <button class="text-button restart-password-reset" type="button">Start again</button>
-                    </form>
-
-                    <form id="new-password-form" class="account-form" hidden>
-                        <p class="eyebrow">Final step</p>
-                        <h2>Choose a new password</h2>
-                        <p class="panel-copy">This will sign out any existing sessions for your account.</p>
-                        <label for="new-password">New password</label>
-                        <input id="new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
-                        <label for="confirm-new-password">Confirm new password</label>
-                        <input id="confirm-new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
-                        <button class="primary-button" type="submit">Change password</button>
-                        <button class="text-button back-to-login" type="button">Back to login</button>
-                    </form>
-                </section>
-
-                <section id="signed-account-panel" class="panel profile-panel" hidden>
-                    <p class="eyebrow">Signed in</p>
+                <section class="panel profile-panel">
+                    <p class="eyebrow">Currently tracking</p>
                     <h2 id="profile-name">User</h2>
-                    <p id="profile-email" class="panel-copy"></p>
+                    <p class="panel-copy">Food history and targets are stored separately for this local user.</p>
                     <div id="profile-stats" class="profile-stats"></div>
-                    <button id="logout-button" class="secondary-button" type="button">Log out</button>
+                    <button id="switch-profile-button" class="secondary-button" type="button">Switch user</button>
                 </section>
 
                 <section class="panel targets-panel" aria-labelledby="targets-title">

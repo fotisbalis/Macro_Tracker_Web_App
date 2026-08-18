@@ -2,9 +2,10 @@ import { loadArchive } from "./js/archive.js";
 import { getHealth } from "./js/api.js";
 import { showToast } from "./js/feedback.js";
 import { initHome, loadToday } from "./js/home.js";
-import { initNavigation } from "./js/navigation.js";
+import { initNavigation, showPage } from "./js/navigation.js";
+import { initProfileGate, showProfileGate, startProfileGate } from "./js/profile-gate.js";
 import { initTheme } from "./js/theme.js";
-import { initUser, loadUser } from "./js/user.js";
+import { initUser, renderUser } from "./js/user.js";
 
 const providerLabel = document.getElementById("ai-provider-label");
 
@@ -22,21 +23,29 @@ async function loadAIStatus() {
 initTheme();
 initHome();
 initUser();
+initProfileGate({
+    async onSelected(user) {
+        await renderUser(user);
+        window.location.hash = "#home";
+        showPage("home");
+        await loadToday();
+    },
+});
 initNavigation({
     onNavigate(pageId) {
         if (pageId === "home") loadToday().catch(() => {});
         if (pageId === "archive") loadArchive();
-        if (pageId === "user") loadUser().catch((error) => showToast(error.message, "error"));
     },
 });
 
 document.addEventListener("macrotrackerdatachange", () => loadToday().catch(() => {}));
+document.addEventListener("macrotrackerswitchprofile", () => {
+    showProfileGate({ clearSelection: true }).catch((error) => showToast(error.message, "error"));
+});
 
 try {
     await loadAIStatus();
-    await loadUser();
-    await loadToday();
-    if (window.location.hash === "#archive") await loadArchive();
+    await startProfileGate();
 } catch (error) {
     showToast(error.message, "error");
 }

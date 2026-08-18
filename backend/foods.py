@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session as DatabaseSession
 
 try:
     from .database import get_db
-    from .dependencies import get_or_create_context
+    from .dependencies import get_current_user
     from .food_data import calculate_totals, serialize_entry, targets_payload
     from .models import FoodEntry
     from .schemas import FoodEntryCreate, ManualFoodEntryCreate
@@ -14,7 +14,7 @@ try:
     from .services.provider import ai_service
 except ImportError:
     from database import get_db
-    from dependencies import get_or_create_context
+    from dependencies import get_current_user
     from food_data import calculate_totals, serialize_entry, targets_payload
     from models import FoodEntry
     from schemas import FoodEntryCreate, ManualFoodEntryCreate
@@ -35,10 +35,9 @@ def entries_for_day(db, user_id: int, selected_date: date):
 @router.post("/foods/analyze")
 async def analyze_food(
     payload: FoodEntryCreate,
-    context=Depends(get_or_create_context),
+    user=Depends(get_current_user),
     db: DatabaseSession = Depends(get_db),
 ):
-    session, user = context
     try:
         result = await ai_service.analyze_food(payload.food_name, payload.quantity)
     except AIServiceError as exc:
@@ -56,7 +55,6 @@ async def analyze_food(
     })
 
     entry = FoodEntry(
-        session_id=session.session_id,
         user_id=user.user_id,
         logged_on=payload.logged_on or date.today(),
         **result.model_dump(),
@@ -77,15 +75,13 @@ async def analyze_food(
 @router.post("/foods/manual")
 def add_manual_food(
     payload: ManualFoodEntryCreate,
-    context=Depends(get_or_create_context),
+    user=Depends(get_current_user),
     db: DatabaseSession = Depends(get_db),
 ):
-    session, user = context
     food_name = payload.food_name or f"manual_meal_{uuid4()}"
     quantity = payload.quantity if payload.quantity is not None else 0.0
 
     entry = FoodEntry(
-        session_id=session.session_id,
         user_id=user.user_id,
         food_name=food_name,
         quantity=quantity,
@@ -113,10 +109,9 @@ def add_manual_food(
 @router.post("/foods/{entry_id}/add-to-today")
 def add_archived_food_to_today(
     entry_id: int,
-    context=Depends(get_or_create_context),
+    user=Depends(get_current_user),
     db: DatabaseSession = Depends(get_db),
 ):
-    session, user = context
     archived_entry = db.query(FoodEntry).filter(
         FoodEntry.entry_id == entry_id,
         FoodEntry.user_id == user.user_id,
@@ -127,7 +122,6 @@ def add_archived_food_to_today(
         raise HTTPException(status_code=400, detail="Only meals from previous days can be added")
 
     copied_entry = FoodEntry(
-        session_id=session.session_id,
         user_id=user.user_id,
         food_name=archived_entry.food_name,
         quantity=archived_entry.quantity,
@@ -154,10 +148,9 @@ def add_archived_food_to_today(
 
 @router.get("/days/today")
 def get_today(
-    context=Depends(get_or_create_context),
+    user=Depends(get_current_user),
     db: DatabaseSession = Depends(get_db),
 ):
-    _session, user = context
     today = date.today()
     entries = entries_for_day(db, user.user_id, today)
     return {
@@ -171,10 +164,9 @@ def get_today(
 @router.delete("/foods/{entry_id}")
 def delete_food(
     entry_id: int,
-    context=Depends(get_or_create_context),
+    user=Depends(get_current_user),
     db: DatabaseSession = Depends(get_db),
 ):
-    _session, user = context
     entry = db.query(FoodEntry).filter(
         FoodEntry.entry_id == entry_id,
         FoodEntry.user_id == user.user_id,

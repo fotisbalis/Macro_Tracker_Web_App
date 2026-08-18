@@ -14,12 +14,20 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-# Local databases
+# Local SQLite data and test artifacts
 *.db
 *.db-*
 *.sqlite
 *.sqlite3
+*.sqlite-*
+
+# Build and packaging output
+build/
+dist/
+*.spec
 
 # Logs
 *.log
