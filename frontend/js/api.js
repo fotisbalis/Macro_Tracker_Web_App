@@ -20,20 +20,39 @@ async function request(path, options = {}) {
         const detail = Array.isArray(data.detail)
             ? data.detail.map((item) => item.msg).join(", ")
             : data.detail;
-        throw new Error(typeof detail === "string" ? detail : "Something went wrong");
+        const error = new Error(typeof detail === "string" ? detail : "Something went wrong");
+        error.status = response.status;
+        throw error;
     }
     return data;
 }
 
 export const getHealth = () => request("/health");
+export const getAIStatus = () => request("/ai/status");
 export const getProfiles = () => request("/profiles");
 export const getCurrentProfile = () => request("/profiles/current");
 export const getToday = () => request("/days/today");
 export const getArchive = () => request("/archive");
 export const getUserStatistics = () => request("/users/me/statistics");
 
+export function getPeriodStatistics(startDate, endDate) {
+    const query = new URLSearchParams({ start_date: startDate, end_date: endDate });
+    return request(`/statistics?${query}`);
+}
+
 export function analyzeFood(payload) {
     return request("/foods/analyze", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function saveOpenAIKey(apiKey) {
+    return request("/ai/api-key", {
+        method: "PUT",
+        body: JSON.stringify({ api_key: apiKey }),
+    });
+}
+
+export function removeOpenAIKey() {
+    return request("/ai/api-key", { method: "DELETE" });
 }
 
 export function addManualFood(payload) {

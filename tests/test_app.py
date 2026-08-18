@@ -2,7 +2,6 @@ import os
 from datetime import date, timedelta
 
 os.environ["DATABASE_URL"] = "sqlite:///./test_macro_tracker.db"
-os.environ["AI_PROVIDER"] = "mock"
 
 from fastapi.testclient import TestClient
 from sqlalchemy import inspect, text
@@ -10,6 +9,7 @@ from sqlalchemy import inspect, text
 from backend.database import Base, engine
 from backend.main import app
 from backend.profile_state import clear_active_user
+from backend.schemas import MacroResult
 from backend.services.ai_service import AIServiceError
 
 
@@ -25,6 +25,23 @@ def create_profile(client: TestClient, name: str = "Fotis") -> dict:
     response = client.post("/profiles", json={"user_name": name})
     assert response.status_code == 200
     return response.json()["user"]
+
+
+def install_test_ai(monkeypatch):
+    async def estimate(food_name, quantity):
+        resolved_quantity = quantity if quantity is not None else 100
+        return MacroResult(
+            food_name=food_name,
+            quantity=resolved_quantity,
+            unit="g",
+            calories=resolved_quantity * 2,
+            protein=resolved_quantity * 0.2,
+            carbs=resolved_quantity * 0.3,
+            fat=resolved_quantity * 0.05,
+            source="openai:test",
+        )
+
+    monkeypatch.setattr("backend.foods.ai_service.analyze_food", estimate)
 
 
 def test_profiles_are_required_and_can_be_created_and_selected():
@@ -88,7 +105,8 @@ def test_food_logs_and_targets_are_isolated_by_profile():
     assert selected_second.json()["user"]["targets"]["calories"] == 2000
 
 
-def test_food_archive_targets_and_delete_flow():
+def test_food_archive_targets_and_delete_flow(monkeypatch):
+    install_test_ai(monkeypatch)
     client = TestClient(app)
     create_profile(client)
 
@@ -102,12 +120,17 @@ def test_food_archive_targets_and_delete_flow():
     assert entry["food_name"] == "Chicken breast"
     assert entry["quantity"] == 250
     assert entry["unit"] == "g"
-    assert entry["source"] == "mock_ai"
+    assert entry["source"] == "openai:test"
     assert {"calories", "protein", "carbs", "fat"}.issubset(entry)
 
+    inferred_quantity = client.post("/foods/analyze", json={"food_name": "Two boiled eggs"})
+    assert inferred_quantity.status_code == 200
+    inferred_entry = inferred_quantity.json()["entry"]
+    assert inferred_entry["quantity"] == 100
+
     today = client.get("/days/today").json()
-    assert len(today["entries"]) == 1
-    assert today["totals"]["calories"] == entry["calories"]
+    assert len(today["entries"]) == 2
+    assert today["totals"]["calories"] == entry["calories"] + inferred_entry["calories"]
 
     targets = client.patch("/users/me/targets", json={
         "calorie_target": 2200,
@@ -120,6 +143,7 @@ def test_food_archive_targets_and_delete_flow():
 
     assert len(client.get("/archive").json()["days"]) == 1
     assert client.delete(f"/foods/{entry['entry_id']}").status_code == 200
+    assert client.delete(f"/foods/{inferred_entry['entry_id']}").status_code == 200
     assert client.get("/days/today").json()["entries"] == []
 
 
@@ -141,7 +165,7 @@ def test_manual_food_uses_defaults_and_bypasses_ai(monkeypatch):
 
     assert added.status_code == 200
     entry = added.json()["entry"]
-    assert entry["food_name"].startswith("manual_meal_")
+    assert entry["food_name"].startswith("manual_")
     assert entry["quantity"] == 0
     assert entry["source"] == "manual"
     assert entry["calories"] == 640
@@ -170,6 +194,37 @@ def test_ai_provider_failure_is_safe_and_does_not_save_entry(monkeypatch):
     assert client.get("/days/today").json()["entries"] == []
 
 
+def test_ai_key_settings_lifecycle(monkeypatch):
+    saved = {"value": None}
+
+    monkeypatch.setattr("backend.ai_settings.load_api_key", lambda: saved["value"])
+    monkeypatch.setattr(
+        "backend.ai_settings.save_api_key",
+        lambda value: saved.update(value=value),
+    )
+    monkeypatch.setattr(
+        "backend.ai_settings.delete_api_key",
+        lambda: saved.update(value=None),
+    )
+
+    client = TestClient(app)
+    inactive = client.get("/ai/status")
+    assert inactive.status_code == 200
+    assert inactive.json()["active"] is False
+    assert "api_key" not in inactive.text
+
+    saved_response = client.put(
+        "/ai/api-key", json={"api_key": "sk-test-user-owned-key-123456789"}
+    )
+    assert saved_response.status_code == 200
+    assert client.get("/ai/status").json()["active"] is True
+    assert saved["value"] == "sk-test-user-owned-key-123456789"
+
+    removed_response = client.delete("/ai/api-key")
+    assert removed_response.status_code == 200
+    assert client.get("/ai/status").json()["active"] is False
+
+
 def test_archived_food_can_be_copied_to_today_multiple_times_without_ai(monkeypatch):
     async def fail_if_called(_food_name, _quantity):
         raise AssertionError("The AI service must not be called when copying an archived meal")
@@ -195,6 +250,31 @@ def test_archived_food_can_be_copied_to_today_multiple_times_without_ai(monkeypa
     assert copied_again["entry_id"] not in {archived["entry_id"], copied["entry_id"]}
     assert copied_again["food_name"] == archived["food_name"]
     assert client.post(f"/foods/{copied['entry_id']}/add-to-today").status_code == 400
+
+
+def test_period_statistics_returns_daily_averages_for_selected_dates():
+    client = TestClient(app)
+    create_profile(client)
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    today = date.today().isoformat()
+
+    for payload in [
+        {"food_name": "Yesterday meal", "quantity": 100, "calories": 400, "protein": 30,
+         "carbs": 50, "fat": 10, "logged_on": yesterday},
+        {"food_name": "Today meal", "quantity": 100, "calories": 200, "protein": 10,
+         "carbs": 30, "fat": 6, "logged_on": today},
+    ]:
+        assert client.post("/foods/manual", json=payload).status_code == 200
+
+    statistics = client.get(f"/statistics?start_date={yesterday}&end_date={today}")
+    assert statistics.status_code == 200
+    data = statistics.json()
+    assert data["entry_count"] == 2
+    assert data["tracked_days"] == 2
+    assert data["totals"] == {"calories": 600, "protein": 40, "carbs": 80, "fat": 16}
+    assert data["daily_averages"] == {"calories": 300, "protein": 20, "carbs": 40, "fat": 8}
+
+    assert client.get(f"/statistics?start_date={today}&end_date={yesterday}").status_code == 422
 
 
 def test_sqlite_schema_contains_no_authentication_or_session_fields():

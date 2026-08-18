@@ -34,7 +34,7 @@ class FoodEntry(Base):
     protein: Mapped[float] = mapped_column(Float, nullable=False)
     carbs: Mapped[float] = mapped_column(Float, nullable=False)
     fat: Mapped[float] = mapped_column(Float, nullable=False)
-    source: Mapped[str] = mapped_column(String(40), default="mock_ai", nullable=False)
+    source: Mapped[str] = mapped_column(String(40), default="openai", nullable=False)
     logged_on: Mapped[date] = mapped_column(Date, default=date.today, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False

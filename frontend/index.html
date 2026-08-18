@@ -24,11 +24,10 @@
     <section id="profile-gate" class="profile-gate" aria-labelledby="profile-gate-title">
         <div class="profile-gate-shell">
             <header class="profile-gate-heading">
-                <span class="logo-mark">M</span>
                 <div>
                     <p class="eyebrow">Macro Tracker</p>
                     <h1 id="profile-gate-title">Who is tracking today?</h1>
-                    <p class="page-subtitle">Choose a local profile or create a new one. No email or password is needed.</p>
+                    <p class="page-subtitle">Choose a local profile or create a new one.</p>
                 </div>
             </header>
 
@@ -52,7 +51,7 @@
                     <p class="panel-copy">Each user gets an independent food log, archive and set of daily targets on this device.</p>
                     <form id="create-profile-form" class="create-profile-form">
                         <label for="new-profile-name">User name</label>
-                        <input id="new-profile-name" type="text" minlength="1" maxlength="80" placeholder="e.g. Fotis" autocomplete="off" required>
+                        <input id="new-profile-name" type="text" minlength="1" maxlength="80" autocomplete="off" required>
                         <button class="primary-button" type="submit">
                             <span>Create and continue</span>
                             <span aria-hidden="true">→</span>
@@ -65,7 +64,6 @@
 
     <nav id="app-navbar" class="navbar" aria-label="Main navigation" hidden>
         <a class="logo" href="#home" data-page="home" aria-label="Macro Tracker home">
-            <span class="logo-mark">M</span>
             <span>Macro Tracker</span>
         </a>
 
@@ -73,6 +71,7 @@
             <div class="nav-links">
                 <a href="#home" data-page="home" class="active">Home</a>
                 <a href="#archive" data-page="archive">Archive</a>
+                <a href="#statistics" data-page="statistics">Statistics</a>
                 <a href="#user" data-page="user">User</a>
             </div>
             <button type="button" id="theme-toggle" class="theme-toggle" role="switch" aria-label="Switch theme" aria-checked="true">
@@ -91,10 +90,10 @@
                     <h1 id="home-title">Track today, simply.</h1>
                     <p id="today-label" class="page-subtitle">Loading your day…</p>
                 </div>
-                <span id="ai-provider-badge" class="provider-badge">
+                <button id="ai-settings-button" class="provider-badge" type="button" aria-haspopup="dialog" aria-controls="ai-settings-dialog">
                     <span class="status-dot"></span>
                     <span id="ai-provider-label">Checking AI status...</span>
-                </span>
+                </button>
             </header>
 
             <div id="macro-summary" class="macro-grid" aria-label="Today's macro totals"></div>
@@ -109,9 +108,9 @@
                         <label for="food-name">Food name</label>
                         <input id="food-name" name="food_name" type="text" minlength="2" maxlength="140" placeholder="e.g. cooked chicken breast" autocomplete="off" required>
 
-                        <label for="food-quantity">Quantity</label>
+                        <label for="food-quantity">Quantity <span>(optional)</span></label>
                         <div class="quantity-field">
-                            <input id="food-quantity" name="quantity" type="number" min="1" max="5000" step="1" placeholder="250" inputmode="decimal" required>
+                            <input id="food-quantity" name="quantity" type="number" min="1" max="5000" step="1" placeholder="e.g. 250" inputmode="decimal">
                             <span>grams</span>
                         </div>
 
@@ -123,7 +122,11 @@
                         <div id="manual-macro-panel" class="manual-macro-panel" hidden>
                             <div>
                                 <p class="eyebrow">Manual entry</p>
-                                <p class="manual-panel-copy">These values will be saved directly without using the AI. Food name and quantity are optional.</p>
+                                <p id="manual-panel-copy" class="manual-panel-copy">These values will be saved directly without using the AI. Food name and quantity are optional.</p>
+                            </div>
+                            <div class="statistics-range-buttons" role="group" aria-label="Choose manual macro input mode">
+                                <button class="range-button active" type="button" data-manual-macro-mode="total" aria-pressed="true">Total macros</button>
+                                <button class="range-button" type="button" data-manual-macro-mode="per100" aria-pressed="false">Per 100 g</button>
                             </div>
                             <div class="manual-macro-grid">
                                 <label for="manual-calories">Calories
@@ -139,7 +142,7 @@
                                     <span class="macro-input-field"><input id="manual-fat" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" disabled><small>g</small></span>
                                 </label>
                             </div>
-                            <p class="manual-default-note">If left empty, the meal name is generated as <code>manual_meal_uuid</code> and quantity is saved as 0g.</p>
+                            <p class="manual-default-note">If no food name is given, it is stored as <code>manual_uuid</code>.</p>
                         </div>
 
                         <button id="analyze-button" class="primary-button" type="submit">
@@ -179,6 +182,63 @@
             </div>
         </section>
 
+        <section id="statistics" class="page" aria-labelledby="statistics-title">
+            <header class="page-heading compact-heading">
+                <div>
+                    <p class="eyebrow">Progress</p>
+                    <h1 id="statistics-title">Your statistics</h1>
+                    <p class="page-subtitle">See your average macros over a selected period.</p>
+                </div>
+            </header>
+
+            <section class="panel statistics-range-panel" aria-label="Statistics date range">
+                <div>
+                    <p class="eyebrow">Date range</p>
+                    <div class="statistics-range-buttons" role="group" aria-label="Choose a date range">
+                        <button class="range-button active" type="button" data-stat-range="week" aria-pressed="true">Last week</button>
+                        <button class="range-button" type="button" data-stat-range="month" aria-pressed="false">Last month</button>
+                        <button class="range-button" type="button" data-stat-range="custom" aria-pressed="false">Custom</button>
+                    </div>
+                </div>
+
+                <form id="custom-date-range-form" class="custom-date-range-form" hidden>
+                    <fieldset class="date-parts-group">
+                        <legend>Start date</legend>
+                        <div class="date-parts">
+                            <input id="statistics-start-day" type="text" inputmode="numeric" autocomplete="off" placeholder="DD" pattern="\d{1,2}" maxlength="2" aria-label="Start date day" required>
+                            <span aria-hidden="true">/</span>
+                            <input id="statistics-start-month" type="text" inputmode="numeric" autocomplete="off" placeholder="MM" pattern="\d{1,2}" maxlength="2" aria-label="Start date month" required>
+                            <span aria-hidden="true">/</span>
+                            <input id="statistics-start-year" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY" pattern="\d{4}" maxlength="4" aria-label="Start date year" required>
+                        </div>
+                    </fieldset>
+                    <fieldset class="date-parts-group">
+                        <legend>End date</legend>
+                        <div class="date-parts">
+                            <input id="statistics-end-day" type="text" inputmode="numeric" autocomplete="off" placeholder="DD" pattern="\d{1,2}" maxlength="2" aria-label="End date day" required>
+                            <span aria-hidden="true">/</span>
+                            <input id="statistics-end-month" type="text" inputmode="numeric" autocomplete="off" placeholder="MM" pattern="\d{1,2}" maxlength="2" aria-label="End date month" required>
+                            <span aria-hidden="true">/</span>
+                            <input id="statistics-end-year" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY" pattern="\d{4}" maxlength="4" aria-label="End date year" required>
+                        </div>
+                    </fieldset>
+                    <button class="primary-button" type="submit">Apply range</button>
+                </form>
+            </section>
+
+            <section class="panel statistics-summary-panel" aria-labelledby="statistics-average-title">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Daily average</p>
+                        <h2 id="statistics-average-title">Average macros</h2>
+                    </div>
+                    <span id="statistics-period" class="count-badge">Loading…</span>
+                </div>
+                <div id="statistics-summary" class="macro-grid" aria-live="polite"></div>
+                <p id="statistics-detail" class="statistics-detail" aria-live="polite">Choose a date range to load statistics.</p>
+            </section>
+        </section>
+
         <section id="user" class="page" aria-labelledby="user-title">
             <header class="page-heading compact-heading">
                 <div>
@@ -212,6 +272,36 @@
             </div>
         </section>
     </main>
+
+    <dialog id="ai-settings-dialog" class="ai-settings-dialog" aria-labelledby="ai-settings-title">
+        <form id="ai-settings-form" class="ai-settings-form">
+            <div class="ai-settings-header">
+                <div>
+                    <p class="eyebrow">AI setup</p>
+                    <h2 id="ai-settings-title">Connect OpenAI</h2>
+                </div>
+                <button id="ai-settings-close" class="dialog-close" type="button" aria-label="Close AI settings">×</button>
+            </div>
+
+            <p class="panel-copy">Add your own OpenAI API key to enable AI meal estimates on this Windows account.</p>
+
+            <label for="openai-api-key">OpenAI API key</label>
+            <div class="api-key-field">
+                <input id="openai-api-key" name="api_key" type="password" minlength="20" maxlength="512" autocomplete="off" spellcheck="false" placeholder="sk-..." required>
+                <button id="api-key-visibility" type="button" aria-label="Show API key">Show</button>
+            </div>
+
+            <p class="security-note">The key is protected by Windows and is never saved in the app database or installer.</p>
+            <a class="api-key-link" href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">Create or manage an OpenAI API key ↗</a>
+
+            <div class="dialog-actions">
+                <button id="remove-api-key" class="danger-button" type="button" hidden>Remove key</button>
+                <span class="dialog-action-spacer"></span>
+                <button id="cancel-ai-settings" class="secondary-dialog-button" type="button">Cancel</button>
+                <button id="save-api-key" class="primary-button" type="submit">Save key</button>
+            </div>
+        </form>
+    </dialog>
 
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 

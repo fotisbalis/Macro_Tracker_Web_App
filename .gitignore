@@ -5,6 +5,7 @@
 
 # Virtual environments
 .venv/
+.venv-build/
 venv/
 env/
 
@@ -28,6 +29,7 @@ htmlcov/
 build/
 dist/
 *.spec
+installer/output/
 
 # Logs
 *.log

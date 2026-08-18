@@ -114,7 +114,6 @@ input:focus-visible {
 
 .logo {
     display: inline-flex;
-    gap: 11px;
     align-items: center;
     color: var(--text);
     font-family: "Segoe UI", system-ui, sans-serif;
@@ -122,17 +121,6 @@ input:focus-visible {
     font-weight: 800;
     letter-spacing: -0.025em;
     text-decoration: none;
-}
-
-.logo-mark {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border-radius: 11px;
-    background: var(--accent);
-    color: #092015;
-    box-shadow: 0 8px 22px rgba(71, 201, 141, 0.2);
 }
 
 .nav-actions,
@@ -307,12 +295,146 @@ h3 {
     font-weight: 600;
 }
 
+button.provider-badge {
+    cursor: pointer;
+    transition: 160ms ease;
+}
+
+button.provider-badge:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    color: var(--text);
+}
+
+.provider-badge.inactive .status-dot {
+    background: #f1b45f;
+    box-shadow: 0 0 0 4px rgba(241, 180, 95, 0.14);
+}
+
+.provider-badge:disabled {
+    cursor: default;
+    opacity: 0.7;
+}
+
 .status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
     background: var(--accent);
     box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.ai-settings-dialog {
+    width: min(520px, calc(100% - 28px));
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--panel-strong);
+    box-shadow: var(--shadow);
+    color: var(--text);
+}
+
+.ai-settings-dialog::backdrop {
+    background: rgba(4, 10, 8, 0.72);
+    backdrop-filter: blur(5px);
+}
+
+.ai-settings-form {
+    display: grid;
+    gap: 16px;
+    padding: 26px;
+}
+
+.ai-settings-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.ai-settings-header h2 {
+    margin-top: 4px;
+}
+
+.dialog-close {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+}
+
+.api-key-field {
+    position: relative;
+}
+
+.api-key-field input {
+    padding-right: 66px;
+}
+
+.api-key-field button {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    padding: 7px 9px;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.73rem;
+    font-weight: 700;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.security-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.55;
+}
+
+.api-key-link {
+    width: fit-content;
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 650;
+    text-underline-offset: 3px;
+}
+
+.dialog-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.dialog-action-spacer {
+    flex: 1;
+}
+
+.dialog-actions .primary-button {
+    min-height: 42px;
+    margin-top: 0;
+    padding: 0 16px;
+}
+
+.secondary-dialog-button,
+.danger-button {
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: transparent;
+    color: var(--text);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.danger-button {
+    border-color: rgba(255, 113, 113, 0.32);
+    color: var(--danger);
 }
 
 .macro-grid {
@@ -390,6 +512,116 @@ h3 {
     transition: width 400ms ease;
 }
 
+.statistics-range-panel,
+.statistics-summary-panel {
+    padding: 28px;
+}
+
+.statistics-range-panel {
+    display: flex;
+    gap: 22px;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.statistics-range-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.range-button {
+    min-height: 42px;
+    padding: 0 15px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 160ms ease;
+}
+
+.range-button:hover,
+.range-button.active {
+    border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.custom-date-range-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(150px, 1fr)) auto;
+    gap: 10px;
+    align-items: end;
+    width: min(100%, 540px);
+}
+
+.date-parts-group {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.date-parts-group legend {
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+.date-parts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 8px minmax(0, 1fr);
+    gap: 4px;
+    align-items: center;
+}
+
+.date-parts input {
+    min-height: 42px;
+    padding: 0 6px;
+    text-align: center;
+}
+
+.date-parts span {
+    color: var(--muted);
+    text-align: center;
+}
+
+.custom-date-range-form .primary-button {
+    min-height: 42px;
+    margin-top: 0;
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
+.statistics-summary-panel .macro-grid {
+    margin-bottom: 14px;
+}
+
+.statistics-card {
+    min-height: 126px;
+}
+
+.statistics-card p {
+    margin: 16px 0 4px;
+}
+
+.statistics-card > small,
+.statistics-detail {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.statistics-detail {
+    margin: 0;
+}
+
 .home-grid,
 .user-grid {
     display: grid;
@@ -427,17 +659,8 @@ h3 {
 
 .profile-gate-heading {
     display: flex;
-    gap: 18px;
     align-items: flex-start;
     margin-bottom: 30px;
-}
-
-.profile-gate-heading .logo-mark {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 auto;
-    border-radius: 15px;
-    font-size: 1.1rem;
 }
 
 .profile-gate-heading h1 {
@@ -606,6 +829,13 @@ input:focus {
     color: var(--muted);
     font-size: 0.75rem;
     transform: translateY(-50%);
+}
+
+.field-note {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
 }
 
 .manual-entry-toggle {
@@ -822,26 +1052,12 @@ input:focus {
 .food-identity {
     display: flex;
     min-width: 0;
-    gap: 12px;
     align-items: center;
 }
 
 .food-identity > div {
     min-width: 0;
     overflow: hidden;
-}
-
-.food-initial {
-    display: grid;
-    width: 42px;
-    height: 42px;
-    flex: none;
-    place-items: center;
-    border-radius: 12px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-family: "Segoe UI", system-ui, sans-serif;
-    font-weight: 800;
 }
 
 .food-identity h3 {
@@ -1149,6 +1365,15 @@ input:focus {
     .food-entry {
         grid-template-columns: minmax(170px, 1fr) minmax(260px, 1fr) 34px;
     }
+
+    .statistics-range-panel {
+        display: grid;
+        align-items: stretch;
+    }
+
+    .custom-date-range-form {
+        width: 100%;
+    }
 }
 
 @media (max-width: 700px) {
@@ -1157,12 +1382,12 @@ input:focus {
         min-height: 68px;
     }
 
-    .logo > span:last-child {
-        display: none;
+    .logo {
+        font-size: 0.82rem;
     }
 
     .nav-actions {
-        gap: 10px;
+        gap: 5px;
     }
 
     .nav-links {
@@ -1170,8 +1395,8 @@ input:focus {
     }
 
     .nav-links a {
-        padding: 8px 9px;
-        font-size: 0.78rem;
+        padding: 7px 7px;
+        font-size: 0.72rem;
     }
 
     .theme-toggle {
@@ -1229,13 +1454,7 @@ input:focus {
     }
 
     .profile-gate-heading {
-        gap: 13px;
         margin-bottom: 24px;
-    }
-
-    .profile-gate-heading .logo-mark {
-        width: 42px;
-        height: 42px;
     }
 
     .profile-gate-heading h1 {
@@ -1245,6 +1464,19 @@ input:focus {
     .profile-picker-panel,
     .create-profile-panel {
         padding: 20px;
+    }
+
+    .statistics-range-panel,
+    .statistics-summary-panel {
+        padding: 20px;
+    }
+
+    .custom-date-range-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .custom-date-range-form .primary-button {
+        grid-column: 1 / -1;
     }
 
     .manual-macro-grid {

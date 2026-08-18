@@ -1,28 +1,18 @@
 import { loadArchive } from "./js/archive.js";
-import { getHealth } from "./js/api.js";
+import { initAISettings, loadAIStatus } from "./js/ai-settings.js";
 import { showToast } from "./js/feedback.js";
 import { initHome, loadToday } from "./js/home.js";
 import { initNavigation, showPage } from "./js/navigation.js";
 import { initProfileGate, showProfileGate, startProfileGate } from "./js/profile-gate.js";
+import { initStatistics, loadStatistics } from "./js/statistics.js";
 import { initTheme } from "./js/theme.js";
 import { initUser, renderUser } from "./js/user.js";
 
-const providerLabel = document.getElementById("ai-provider-label");
-
-async function loadAIStatus() {
-    try {
-        const health = await getHealth();
-        providerLabel.textContent = health.ai_provider === "qwen"
-            ? "Qwen AI active"
-            : "Mock AI active";
-    } catch (_error) {
-        providerLabel.textContent = "AI status unavailable";
-    }
-}
-
 initTheme();
+initAISettings();
 initHome();
 initUser();
+initStatistics();
 initProfileGate({
     async onSelected(user) {
         await renderUser(user);
@@ -35,6 +25,7 @@ initNavigation({
     onNavigate(pageId) {
         if (pageId === "home") loadToday().catch(() => {});
         if (pageId === "archive") loadArchive();
+        if (pageId === "statistics") loadStatistics();
     },
 });
 
@@ -44,7 +35,7 @@ document.addEventListener("macrotrackerswitchprofile", () => {
 });
 
 try {
-    await loadAIStatus();
+    await loadAIStatus().catch(() => {});
     await startProfileGate();
 } catch (error) {
     showToast(error.message, "error");

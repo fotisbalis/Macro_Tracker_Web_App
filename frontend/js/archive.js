@@ -40,10 +40,9 @@ function createDay(day) {
         const row = document.createElement("div");
         row.className = "archive-entry";
         const name = document.createElement("span");
-        const sourceLabel = entry.source === "manual"
-            ? "manual entry"
-            : entry.source === "mock_ai" ? "mock estimate" : "AI estimate";
-        name.innerHTML = `<strong></strong><small>${entry.quantity}${entry.unit} | ${sourceLabel}</small>`;
+        const sourceLabel = entry.source === "manual" ? "manual entry" : "AI estimate";
+        const quantityLabel = entry.quantity === 0 ? "N/A" : `${entry.quantity}${entry.unit}`;
+        name.innerHTML = `<strong></strong><small>${quantityLabel} | ${sourceLabel}</small>`;
         name.querySelector("strong").textContent = entry.food_name;
         const macros = document.createElement("span");
         macros.className = "archive-entry-macros";

@@ -10,7 +10,7 @@ try:
     from .food_data import calculate_totals, serialize_entry, targets_payload
     from .models import FoodEntry
     from .schemas import FoodEntryCreate, ManualFoodEntryCreate
-    from .services.ai_service import AIServiceError
+    from .services.ai_service import AIInactiveError, AIServiceError
     from .services.provider import ai_service
 except ImportError:
     from database import get_db
@@ -18,7 +18,7 @@ except ImportError:
     from food_data import calculate_totals, serialize_entry, targets_payload
     from models import FoodEntry
     from schemas import FoodEntryCreate, ManualFoodEntryCreate
-    from services.ai_service import AIServiceError
+    from services.ai_service import AIInactiveError, AIServiceError
     from services.provider import ai_service
 
 
@@ -40,6 +40,11 @@ async def analyze_food(
 ):
     try:
         result = await ai_service.analyze_food(payload.food_name, payload.quantity)
+    except AIInactiveError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="AI is inactive. Add your OpenAI API key to continue.",
+        ) from exc
     except AIServiceError as exc:
         raise HTTPException(
             status_code=503,
@@ -50,7 +55,6 @@ async def analyze_food(
         ) from exc
     result = result.model_copy(update={
         "food_name": payload.food_name,
-        "quantity": payload.quantity,
         "unit": "g",
     })
 
@@ -78,7 +82,7 @@ def add_manual_food(
     user=Depends(get_current_user),
     db: DatabaseSession = Depends(get_db),
 ):
-    food_name = payload.food_name or f"manual_meal_{uuid4()}"
+    food_name = payload.food_name or f"manual_{uuid4()}"
     quantity = payload.quantity if payload.quantity is not None else 0.0
 
     entry = FoodEntry(

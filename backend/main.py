@@ -1,8 +1,10 @@
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+PROJECT_DIRECTORY = Path(__file__).resolve().parent.parent
+load_dotenv(PROJECT_DIRECTORY / ".env", override=False)
 
 import uvicorn
 from fastapi import FastAPI
@@ -11,22 +13,25 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 try:
+    from .ai_settings import router as ai_settings_router
     from .archive import router as archive_router
     from .database import initialize_database
     from .foods import router as foods_router
     from .profiles import router as profiles_router
-    from .services.provider import get_ai_provider_name
+    from .services.provider import is_ai_active
     from .users import router as users_router
 except ImportError:
+    from ai_settings import router as ai_settings_router
     from archive import router as archive_router
     from database import initialize_database
     from foods import router as foods_router
     from profiles import router as profiles_router
-    from services.provider import get_ai_provider_name
+    from services.provider import is_ai_active
     from users import router as users_router
 
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+RESOURCE_DIRECTORY = Path(getattr(sys, "_MEIPASS", PROJECT_DIRECTORY))
+FRONTEND_DIR = RESOURCE_DIRECTORY / "frontend"
 
 app = FastAPI(title="Macro Tracker", version="0.1.0")
 
@@ -40,6 +45,7 @@ app.add_middleware(
 
 initialize_database()
 
+app.include_router(ai_settings_router)
 app.include_router(profiles_router)
 app.include_router(foods_router)
 app.include_router(archive_router)
@@ -48,7 +54,7 @@ app.include_router(users_router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "ai_provider": get_ai_provider_name()}
+    return {"status": "ok", "ai_provider": "openai", "ai_active": is_ai_active()}
 
 
 @app.get("/")
@@ -60,4 +66,4 @@ app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -1,15 +1,15 @@
 # Macro Tracker
 
-A local macro-tracking web app with:
+A local macro-tracking desktop app with:
 
-- a startup chooser for local user profiles;
-- separate food logs, archives, and daily targets for every profile;
-- no login, password, email verification, cookies, or account sessions;
-- an embedded SQLite database (`macro_tracker.db`);
-- manual meal entry and optional Qwen-powered macro estimates;
+- an embedded local SQLite database
+- manual meal entry and optional ChatGPT-powered macro estimates.
+- macro targets, statistics and archive 
 - a vanilla HTML/CSS/JavaScript frontend served by FastAPI.
 
-The mock provider returns intentionally random estimates. Qwen estimates are also approximations and must not be treated as medical or nutritional advice.
+## Windows installer
+
+Got to the releases page and click the latest MacroTracker-Setup-<#version>.exe
 
 ## Run locally
 
@@ -30,22 +30,24 @@ Opening or refreshing the app always returns to the profile chooser. This does n
 
 ## AI configuration
 
-Copy `.env.example` to `.env`. Keep this setting for local random estimates without API calls:
+Open the app and select a local profile. When AI is inactive, press **Set up AI**, enter your own OpenAI API key, and press **Save key**. The status changes to **OpenAI active** immediately; the server does not need to restart.
+
+The key is:
+
+- encrypted at rest with Windows Data Protection API (DPAPI);
+- stored for the current Windows account under `%LOCALAPPDATA%\MacroTracker`;
+- never stored in SQLite, `.env`, browser storage, or the installer;
+- removable from the same AI settings dialog.
+
+A user can create or manage keys at `https://platform.openai.com/api-keys`.
+
+`.env` is only needed for optional development settings:
 
 ```dotenv
-AI_PROVIDER=mock
+OPENAI_MODEL=gpt-5.6-luna
+OPENAI_TIMEOUT_SECONDS=30
 ```
 
-To use Qwen instead, add your Alibaba Model Studio key:
+Restart FastAPI after changing these optional settings. Never put a real API key in `.env` or commit one.
 
-```dotenv
-AI_PROVIDER=qwen
-DASHSCOPE_API_KEY=your-private-api-key
-QWEN_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-QWEN_MODEL=qwen3.5-flash
-QWEN_TIMEOUT_SECONDS=30
-```
-
-Restart FastAPI after editing `.env`. Never commit the real API key.
-
-The provider contract is in `backend/services/ai_service.py`; implementations are in `backend/services/mock_ai.py` and `backend/services/qwen_ai.py`. Qwen is used only by the AI estimate form. Manual meals and meals copied from the archive do not call the API.
+The provider contract is in `backend/services/ai_service.py`, the OpenAI implementation is in `backend/services/openai_ai.py`, and protected key storage is in `backend/services/api_key_store.py`. OpenAI is used only by the AI estimate form. Manual meals and meals copied from the archive do not call the API.

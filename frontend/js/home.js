@@ -12,6 +12,8 @@ const foodNameInput = document.getElementById("food-name");
 const quantityInput = document.getElementById("food-quantity");
 const manualToggle = document.getElementById("manual-entry-toggle");
 const manualPanel = document.getElementById("manual-macro-panel");
+const manualMacroModeButtons = document.querySelectorAll("[data-manual-macro-mode]");
+const manualPanelCopy = document.getElementById("manual-panel-copy");
 const manualInputs = [
     document.getElementById("manual-calories"),
     document.getElementById("manual-protein"),
@@ -19,6 +21,7 @@ const manualInputs = [
     document.getElementById("manual-fat"),
 ];
 let manualMode = false;
+let manualPer100Mode = false;
 
 const macroConfig = [
     ["calories", "Calories", "kcal"],
@@ -60,20 +63,16 @@ function createEntryCard(entry) {
 
     const identity = document.createElement("div");
     identity.className = "food-identity";
-    const initial = document.createElement("span");
-    initial.className = "food-initial";
-    initial.textContent = entry.food_name.charAt(0).toUpperCase();
     const text = document.createElement("div");
     const title = document.createElement("h3");
     title.textContent = entry.food_name;
     title.title = entry.food_name;
     const subtitle = document.createElement("p");
-    const sourceLabel = entry.source === "manual"
-        ? "manual entry"
-        : entry.source === "mock_ai" ? "mock estimate" : "AI estimate";
-    subtitle.textContent = `${entry.quantity} ${entry.unit} | ${sourceLabel}`;
+    const sourceLabel = entry.source === "manual" ? "manual entry" : "AI estimate";
+    const quantityLabel = entry.quantity === 0 ? "N/A" : `${entry.quantity} ${entry.unit}`;
+    subtitle.textContent = `${quantityLabel} | ${sourceLabel}`;
     text.append(title, subtitle);
-    identity.append(initial, text);
+    identity.append(text);
 
     const metrics = document.createElement("div");
     metrics.className = "entry-metrics";
@@ -129,12 +128,13 @@ function showLatest(entry) {
 
 function setManualMode(enabled) {
     manualMode = enabled;
+    if (!enabled) setManualMacroMode(false);
     manualPanel.hidden = !enabled;
     manualToggle.setAttribute("aria-expanded", String(enabled));
     manualToggle.querySelector(".manual-toggle-icon").textContent = enabled ? "−" : "+";
     foodNameInput.required = !enabled;
-    quantityInput.required = !enabled;
-    quantityInput.min = enabled ? "0" : "1";
+    quantityInput.required = enabled && manualPer100Mode;
+    quantityInput.min = enabled && manualPer100Mode ? "1" : enabled ? "0" : "1";
     manualInputs.forEach((input) => {
         input.disabled = !enabled;
         input.required = enabled;
@@ -142,8 +142,33 @@ function setManualMode(enabled) {
     analyzeButton.querySelector("span").textContent = enabled ? "Add manual meal" : "Calculate and add";
 }
 
+function setManualMacroMode(per100) {
+    manualPer100Mode = per100;
+    manualMacroModeButtons.forEach((button) => {
+        const selected = (button.dataset.manualMacroMode === "per100") === per100;
+        button.classList.toggle("active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+    });
+    manualPanelCopy.textContent = per100
+        ? "These values will be saved directly without using the AI. Quantity is required and totals are calculated automatically."
+        : "These values will be saved directly without using the AI. Food name and quantity are optional.";
+    quantityInput.required = manualMode && per100;
+    quantityInput.min = manualMode && per100 ? "1" : manualMode ? "0" : "1";
+}
+
+function calculatedManualMacro(value) {
+    if (!manualPer100Mode) return Number(value);
+    const quantity = Number(quantityInput.value);
+    return Math.round(Number(value) * (quantity / 100) * 10) / 10;
+}
+
 export function initHome() {
     manualToggle.addEventListener("click", () => setManualMode(!manualMode));
+    manualMacroModeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            setManualMacroMode(button.dataset.manualMacroMode === "per100");
+        });
+    });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -154,14 +179,14 @@ export function initHome() {
                 ? await addManualFood({
                     food_name: foodNameInput.value.trim() || null,
                     quantity: quantityInput.value === "" ? 0 : Number(quantityInput.value),
-                    calories: Number(manualInputs[0].value),
-                    protein: Number(manualInputs[1].value),
-                    carbs: Number(manualInputs[2].value),
-                    fat: Number(manualInputs[3].value),
+                    calories: calculatedManualMacro(manualInputs[0].value),
+                    protein: calculatedManualMacro(manualInputs[1].value),
+                    carbs: calculatedManualMacro(manualInputs[2].value),
+                    fat: calculatedManualMacro(manualInputs[3].value),
                 })
                 : await analyzeFood({
                     food_name: foodNameInput.value,
-                    quantity: Number(quantityInput.value),
+                    quantity: quantityInput.value === "" ? null : Number(quantityInput.value),
                 });
             showLatest(data.entry);
             form.reset();
@@ -170,6 +195,9 @@ export function initHome() {
             showToast(data.message);
         } catch (error) {
             showToast(error.message, "error");
+            if (!manualMode && error.status === 409) {
+                document.dispatchEvent(new CustomEvent("macrotrackeropenaisettings"));
+            }
         } finally {
             analyzeButton.disabled = false;
             analyzeButton.querySelector("span").textContent = manualMode ? "Add manual meal" : "Calculate and add";

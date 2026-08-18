@@ -1,12 +1,16 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator
+
+
+class APIKeyUpdate(BaseModel):
+    api_key: SecretStr = Field(min_length=20, max_length=512)
 
 
 class FoodEntryCreate(BaseModel):
     food_name: str = Field(min_length=2, max_length=140)
-    quantity: float = Field(gt=0, le=5000)
+    quantity: Optional[float] = Field(default=None, gt=0, le=5000)
     logged_on: Optional[date] = None
 
     @field_validator("food_name")
@@ -64,4 +68,4 @@ class MacroResult(BaseModel):
     protein: float = Field(ge=0)
     carbs: float = Field(ge=0)
     fat: float = Field(ge=0)
-    source: str = "mock_ai"
+    source: str = "openai"
