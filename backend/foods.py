@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,17 +8,17 @@ from sqlalchemy.orm import Session as DatabaseSession
 try:
     from .database import get_db
     from .dependencies import get_current_user
-    from .food_data import calculate_totals, serialize_entry, targets_payload
+    from .food_data import calculate_totals, quantity_values, serialize_entry, targets_payload
     from .models import FoodEntry
-    from .schemas import FoodEntryCreate, ManualFoodEntryCreate
+    from .schemas import FoodEntryCreate, FoodQuantityUpdate, ManualFoodEntryCreate
     from .services.ai_service import AIInactiveError, AIServiceError
     from .services.provider import ai_service
 except ImportError:
     from database import get_db
     from dependencies import get_current_user
-    from food_data import calculate_totals, serialize_entry, targets_payload
+    from food_data import calculate_totals, quantity_values, serialize_entry, targets_payload
     from models import FoodEntry
-    from schemas import FoodEntryCreate, ManualFoodEntryCreate
+    from schemas import FoodEntryCreate, FoodQuantityUpdate, ManualFoodEntryCreate
     from services.ai_service import AIInactiveError, AIServiceError
     from services.provider import ai_service
 
@@ -88,8 +89,8 @@ def add_manual_food(
     entry = FoodEntry(
         user_id=user.user_id,
         food_name=food_name,
-        quantity=quantity,
-        unit="g",
+        quantity=quantity or 1,
+        unit="g" if quantity else "portion",
         calories=payload.calories,
         protein=payload.protein,
         carbs=payload.carbs,
@@ -128,8 +129,7 @@ def add_archived_food_to_today(
     copied_entry = FoodEntry(
         user_id=user.user_id,
         food_name=archived_entry.food_name,
-        quantity=archived_entry.quantity,
-        unit=archived_entry.unit,
+        **quantity_values(archived_entry),
         calories=archived_entry.calories,
         protein=archived_entry.protein,
         carbs=archived_entry.carbs,
@@ -165,6 +165,37 @@ def get_today(
     }
 
 
+@router.patch("/foods/{entry_id}/quantity")
+def update_food_quantity(
+    entry_id: int,
+    payload: FoodQuantityUpdate,
+    user=Depends(get_current_user),
+    db: DatabaseSession = Depends(get_db),
+):
+    entry = db.query(FoodEntry).filter_by(entry_id=entry_id, user_id=user.user_id).first()
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Food entry not found")
+    portion = quantity_values(entry)
+    if portion["unit"] == "portion" and not payload.quantity.is_integer():
+        raise HTTPException(status_code=422, detail="Quantity must be a whole number of portions (1, 2, 3, …)")
+    for field in ("calories", "protein", "carbs", "fat"):
+        # Preserve precision between edits; round only when displaying values.
+        scaled = Decimal(str(getattr(entry, field))) * Decimal(str(payload.quantity)) / Decimal(str(portion["quantity"]))
+        setattr(entry, field, float(scaled))
+    entry.unit = portion["unit"]
+    entry.quantity = payload.quantity
+    db.commit()
+    db.refresh(entry)
+    entries = entries_for_day(db, user.user_id, entry.logged_on)
+    unit_label = "portions" if entry.unit == "portion" and entry.quantity != 1 else entry.unit
+    return {
+        "message": f"Updated {entry.food_name} to {entry.quantity:g} {unit_label}.",
+        "entry": serialize_entry(entry),
+        "totals": calculate_totals(entries),
+        "targets": targets_payload(user),
+    }
+
+
 @router.delete("/foods/{entry_id}")
 def delete_food(
     entry_id: int,
@@ -182,3 +213,20 @@ def delete_food(
     db.commit()
     entries = entries_for_day(db, user.user_id, selected_date)
     return {"message": "Food removed", "totals": calculate_totals(entries)}
+
+
+@router.get("/days/{selected_date}")
+def get_day(
+    selected_date: date,
+    user=Depends(get_current_user),
+    db: DatabaseSession = Depends(get_db),
+):
+    if selected_date > date.today():
+        raise HTTPException(status_code=422, detail="Choose today or a previous date")
+    entries = entries_for_day(db, user.user_id, selected_date)
+    return {
+        "date": selected_date.isoformat(),
+        "entries": [serialize_entry(entry) for entry in entries],
+        "totals": calculate_totals(entries),
+        "targets": targets_payload(user),
+    }

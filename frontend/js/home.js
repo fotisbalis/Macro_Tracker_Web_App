@@ -1,5 +1,12 @@
-import { addManualFood, analyzeFood, deleteFood, getToday } from "./api.js";
+import { addManualFood, analyzeFood, deleteFood, getDay, updateFoodQuantity } from "./api.js";
 import { showToast } from "./feedback.js";
+import { createFavoriteButton } from "./favorite-button.js";
+import { getDiaryDate, setDiaryDate, localToday, formatDate } from "./diary-date.js";
+import { readDateInput, setDateInput, validateDateInput } from "./date-input.js";
+
+const diaryDate = document.getElementById("diary-date");
+const todayButton = document.getElementById("diary-today");
+let loadVersion = 0;
 
 const macroSummary = document.getElementById("macro-summary");
 const entriesContainer = document.getElementById("today-entries");
@@ -31,11 +38,6 @@ const macroConfig = [
     ["fat", "Fat", "g"],
 ];
 
-function formatDate(value) {
-    return new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long" })
-        .format(new Date(`${value}T12:00:00`));
-}
-
 function renderSummary(totals, targets) {
     macroSummary.replaceChildren();
     macroConfig.forEach(([key, label, unit]) => {
@@ -59,6 +61,7 @@ function metric(label, value, unit) {
 }
 
 function createEntryCard(entry) {
+    const isCount = entry.unit === "portion";
     const card = document.createElement("article");
     card.className = "food-entry";
 
@@ -70,7 +73,7 @@ function createEntryCard(entry) {
     title.title = entry.food_name;
     const subtitle = document.createElement("p");
     const sourceLabel = entry.source === "manual" ? "manual entry" : "AI estimate";
-    const quantityLabel = entry.quantity === 0 ? "N/A" : `${entry.quantity} ${entry.unit}`;
+    const quantityLabel = isCount ? `${entry.quantity} ${entry.quantity === 1 ? "portion" : "portions"}` : `${entry.quantity} ${entry.unit}`;
     subtitle.textContent = `${quantityLabel} | ${sourceLabel}`;
     text.append(title, subtitle);
     identity.append(text);
@@ -90,7 +93,77 @@ function createEntryCard(entry) {
     remove.dataset.entryId = entry.entry_id;
     remove.setAttribute("aria-label", `Remove ${entry.food_name}`);
     remove.textContent = "×";
-    card.append(identity, metrics, remove);
+    const actions = document.createElement("div");
+    actions.className = "entry-actions";
+    actions.append(createFavoriteButton(entry), remove);
+    const quantityForm = document.createElement("form");
+    quantityForm.className = "entry-quantity-form";
+    const quantityLabelElement = document.createElement("label");
+    quantityLabelElement.htmlFor = `entry-quantity-${entry.entry_id}`;
+    quantityLabelElement.textContent = isCount ? "Portion(s)" : `Quantity (${entry.unit})`;
+    const controls = document.createElement("div");
+    controls.className = "entry-quantity-controls";
+    const input = document.createElement("input");
+    input.id = quantityLabelElement.htmlFor;
+    input.type = "number";
+    input.inputMode = isCount ? "numeric" : "decimal";
+    input.min = isCount ? "1" : "0.1";
+    input.max = "5000";
+    input.step = isCount ? "1" : "0.1";
+    input.required = true;
+    input.value = entry.quantity > 0 ? entry.quantity : "";
+    input.placeholder = isCount ? "1" : "Weight";
+    input.setAttribute("aria-label", isCount ? `Portion(s) for ${entry.food_name}` : `Quantity for ${entry.food_name} (${entry.unit})`);
+    const decrease = document.createElement("button");
+    decrease.type = "button";
+    decrease.textContent = "−";
+    decrease.setAttribute("aria-label", `Decrease ${entry.food_name} by 1 ${entry.unit}`);
+    const increase = document.createElement("button");
+    increase.type = "button";
+    increase.textContent = "+";
+    increase.setAttribute("aria-label", `Increase ${entry.food_name} by 1 ${entry.unit}`);
+    const adjust = (amount) => {
+        const current = input.valueAsNumber;
+        const next = Number.isFinite(current) ? current + amount : 1;
+        input.value = Math.min(5000, Math.max(isCount ? 1 : 0.1, isCount ? Math.round(next) : Math.round(next * 10) / 10));
+    };
+    decrease.addEventListener("click", () => adjust(-1));
+    increase.addEventListener("click", () => adjust(1));
+    const update = document.createElement("button");
+    update.type = "submit";
+    update.className = "favorite-button";
+    update.textContent = "Update";
+    update.setAttribute("aria-label", `Update quantity for ${entry.food_name}`);
+    controls.append(decrease, input, increase);
+    quantityForm.append(quantityLabelElement, controls, update);
+    if (isCount) {
+        const hint = document.createElement("small");
+        hint.className = "entry-quantity-hint";
+        hint.id = `entry-weight-hint-${entry.entry_id}`;
+        input.setAttribute("aria-describedby", hint.id);
+        quantityForm.append(hint);
+    }
+    quantityForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!quantityForm.reportValidity()) return;
+        const quantity = input.valueAsNumber;
+        if (quantity === entry.quantity) return;
+        const enabledControls = [...card.querySelectorAll("button:enabled, input:enabled")];
+        enabledControls.forEach((control) => { control.disabled = true; });
+        update.textContent = "Updating…";
+        try {
+            const data = await updateFoodQuantity(entry.entry_id, quantity);
+            latestResult.hidden = true;
+            await loadToday();
+            showToast(data.message);
+        } catch (error) {
+            showToast(error.message, "error");
+        } finally {
+            enabledControls.forEach((control) => { control.disabled = false; });
+            update.textContent = "Update";
+        }
+    });
+    card.append(identity, metrics, actions, quantityForm);
     return card;
 }
 
@@ -108,14 +181,26 @@ function renderEntries(entries) {
 }
 
 export async function loadToday() {
+    const version = ++loadVersion;
+    const selectedDate = getDiaryDate();
+    setDateInput(diaryDate, selectedDate);
+    todayLabel.textContent = formatDate(selectedDate);
+    document.getElementById("today-foods-title").textContent = selectedDate === localToday() ? "Today’s foods" : "Foods for this day";
+    document.getElementById("diary-date-hint").textContent = `New foods will be added to ${formatDate(selectedDate)}.`;
+    macroSummary.replaceChildren();
+    entryCount.textContent = "Loading…";
+    entriesContainer.textContent = "Loading your food log…";
     try {
-        const data = await getToday();
+        const data = await getDay(selectedDate);
+        if (version !== loadVersion) return;
         todayLabel.textContent = formatDate(data.date);
         renderSummary(data.totals, data.targets);
         renderEntries(data.entries);
         return data;
     } catch (error) {
-        entriesContainer.innerHTML = `<p class="empty-state">${error.message}</p>`;
+        if (version !== loadVersion) return;
+        entriesContainer.textContent = error.message;
+        entryCount.textContent = "Unavailable";
         throw error;
     }
 }
@@ -124,7 +209,7 @@ function showLatest(entry) {
     latestResult.hidden = false;
     latestResult.innerHTML = `
         <span class="result-check">✓</span>
-        <div><strong>${entry.calories} kcal added</strong><p>${entry.protein}g protein · ${entry.carbs}g carbs · ${entry.fat}g fat</p></div>`;
+        <div><strong>${entry.calories} kcal added · ${formatDate(entry.logged_on)}</strong><p>${entry.protein}g protein · ${entry.carbs}g carbs · ${entry.fat}g fat</p></div>`;
 }
 
 function setManualMode(enabled) {
@@ -165,6 +250,18 @@ function calculatedManualMacro(value) {
 }
 
 export function initHome() {
+    setDateInput(diaryDate, getDiaryDate());
+    diaryDate.addEventListener("change", () => {
+        if (!validateDateInput(diaryDate)) return;
+        setDiaryDate(readDateInput(diaryDate));
+        latestResult.hidden = true;
+        loadToday().catch((error) => showToast(error.message, "error"));
+    });
+    todayButton.addEventListener("click", () => {
+        setDiaryDate(localToday());
+        latestResult.hidden = true;
+        loadToday().catch((error) => showToast(error.message, "error"));
+    });
     manualToggle.addEventListener("click", () => setManualMode(!manualMode));
     manualMacroModeButtons.forEach((button) => {
         button.addEventListener("click", () => {
@@ -174,11 +271,16 @@ export function initHome() {
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (!validateDateInput(diaryDate)) return;
+        const loggedOn = getDiaryDate();
         analyzeButton.disabled = true;
+        diaryDate.disabled = true;
+        todayButton.disabled = true;
         analyzeButton.querySelector("span").textContent = manualMode ? "Adding meal..." : "Calculating...";
         try {
             const data = manualMode
                 ? await addManualFood({
+                    logged_on: loggedOn,
                     food_name: foodNameInput.value.trim() || null,
                     quantity: quantityInput.value === "" ? 0 : Number(quantityInput.value),
                     calories: calculatedManualMacro(manualInputs[0].value),
@@ -187,6 +289,7 @@ export function initHome() {
                     fat: calculatedManualMacro(manualInputs[3].value),
                 })
                 : await analyzeFood({
+                    logged_on: loggedOn,
                     food_name: foodNameInput.value,
                     quantity: quantityInput.value === "" ? null : Number(quantityInput.value),
                 });
@@ -201,6 +304,8 @@ export function initHome() {
                 document.dispatchEvent(new CustomEvent("macrotrackeropenaisettings"));
             }
         } finally {
+            diaryDate.disabled = false;
+            todayButton.disabled = false;
             analyzeButton.disabled = false;
             analyzeButton.querySelector("span").textContent = manualMode ? "Add manual meal" : "Calculate and add";
         }

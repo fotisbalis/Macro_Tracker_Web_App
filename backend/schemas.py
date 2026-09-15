@@ -8,10 +8,28 @@ class APIKeyUpdate(BaseModel):
     api_key: SecretStr = Field(min_length=20, max_length=512)
 
 
-class FoodEntryCreate(BaseModel):
+class FoodLogDate(BaseModel):
+    logged_on: Optional[date] = None
+
+    @field_validator("logged_on")
+    @classmethod
+    def reject_future_date(cls, value: Optional[date]) -> Optional[date]:
+        if value is not None and value > date.today():
+            raise ValueError("Choose today or a previous date")
+        return value
+
+
+class FavoriteFoodLog(FoodLogDate):
+    quantity: Optional[float] = Field(default=None, gt=0, le=5000, allow_inf_nan=False)
+
+
+class FoodQuantityUpdate(BaseModel):
+    quantity: float = Field(ge=0.1, le=5000, multiple_of=0.1, allow_inf_nan=False)
+
+
+class FoodEntryCreate(FoodLogDate):
     food_name: str = Field(min_length=2, max_length=140)
     quantity: Optional[float] = Field(default=None, gt=0, le=5000)
-    logged_on: Optional[date] = None
 
     @field_validator("food_name")
     @classmethod
@@ -19,14 +37,13 @@ class FoodEntryCreate(BaseModel):
         return " ".join(value.strip().split())
 
 
-class ManualFoodEntryCreate(BaseModel):
+class ManualFoodEntryCreate(FoodLogDate):
     food_name: Optional[str] = Field(default=None, max_length=140)
     quantity: Optional[float] = Field(default=0, ge=0, le=5000)
     calories: float = Field(ge=0)
     protein: float = Field(ge=0)
     carbs: float = Field(ge=0)
     fat: float = Field(ge=0)
-    logged_on: Optional[date] = None
 
     @field_validator("food_name")
     @classmethod

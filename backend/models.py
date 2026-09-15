@@ -39,3 +39,20 @@ class FoodEntry(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+
+class FavoriteFood(Base):
+    __tablename__ = "favorite_foods"
+
+    favorite_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    food_name: Mapped[str] = mapped_column(String(140), nullable=False)
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
+    unit: Mapped[str] = mapped_column(String(20), nullable=False)
+    calories: Mapped[float] = mapped_column(Float, nullable=False)
+    protein: Mapped[float] = mapped_column(Float, nullable=False)
+    carbs: Mapped[float] = mapped_column(Float, nullable=False)
+    fat: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str] = mapped_column(String(40), nullable=False)

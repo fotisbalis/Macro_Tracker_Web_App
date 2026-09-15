@@ -32,6 +32,13 @@ export const getAIStatus = () => request("/ai/status");
 export const getProfiles = () => request("/profiles");
 export const getCurrentProfile = () => request("/profiles/current");
 export const getToday = () => request("/days/today");
+export const getDay = (date) => request(`/days/${encodeURIComponent(date)}`);
+export const getFavorites = () => request("/favorites");
+export const saveFavorite = (entryId) => request(`/favorites/from-entry/${encodeURIComponent(entryId)}`, { method: "POST" });
+export const removeFavorite = (favoriteId) => request(`/favorites/${encodeURIComponent(favoriteId)}`, { method: "DELETE" });
+export const logFavorite = (favoriteId, date, quantity) => request(`/favorites/${encodeURIComponent(favoriteId)}/log`, {
+    method: "POST", body: JSON.stringify({ logged_on: date, quantity }),
+});
 export const getArchive = () => request("/archive");
 export const getUserStatistics = () => request("/users/me/statistics");
 
@@ -65,6 +72,12 @@ export function addArchivedFoodToToday(entryId) {
 
 export function deleteFood(entryId) {
     return request(`/foods/${encodeURIComponent(entryId)}`, { method: "DELETE" });
+}
+
+export function updateFoodQuantity(entryId, quantity) {
+    return request(`/foods/${encodeURIComponent(entryId)}/quantity`, {
+        method: "PATCH", body: JSON.stringify({ quantity }),
+    });
 }
 
 export function createProfile(userName) {

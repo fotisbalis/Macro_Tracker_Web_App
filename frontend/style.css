@@ -559,39 +559,24 @@ button.provider-badge:hover:not(:disabled) {
     width: min(100%, 540px);
 }
 
-.date-parts-group {
+.statistics-date-field {
     display: grid;
     gap: 6px;
     min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-}
-
-.date-parts-group legend {
-    padding: 0;
     color: var(--muted);
     font-size: 0.74rem;
     font-weight: 600;
 }
 
-.date-parts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 8px minmax(0, 1fr);
-    gap: 4px;
-    align-items: center;
-}
-
-.date-parts input {
+.statistics-date-field input {
+    width: 100%;
+    min-width: 0;
     min-height: 42px;
-    padding: 0 6px;
-    text-align: center;
+    padding: 8px 10px;
+    color-scheme: light;
 }
 
-.date-parts span {
-    color: var(--muted);
-    text-align: center;
-}
+html[data-theme="dark"] .statistics-date-field input { color-scheme: dark; }
 
 .custom-date-range-form .primary-button {
     min-height: 42px;
@@ -1039,7 +1024,7 @@ input:focus {
 
 .food-entry {
     display: grid;
-    grid-template-columns: minmax(180px, 1.3fr) minmax(280px, 1fr) 34px;
+    grid-template-columns: minmax(120px, 1.3fr) minmax(220px, 1fr) auto;
     gap: 16px;
     align-items: center;
     min-height: 76px;
@@ -1363,7 +1348,7 @@ input:focus {
     }
 
     .food-entry {
-        grid-template-columns: minmax(170px, 1fr) minmax(260px, 1fr) 34px;
+        grid-template-columns: minmax(120px, 1fr) minmax(220px, 1fr) auto;
     }
 
     .statistics-range-panel {
@@ -1472,7 +1457,7 @@ input:focus {
     }
 
     .custom-date-range-form {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
     }
 
     .custom-date-range-form .primary-button {
@@ -1484,7 +1469,7 @@ input:focus {
     }
 
     .food-entry {
-        grid-template-columns: 1fr 30px;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .entry-metrics {
@@ -1531,6 +1516,122 @@ input:focus {
         width: 100%;
         margin-top: 4px;
     }
+}
+
+.diary-date-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--panel);
+}
+
+.diary-date-bar input {
+    width: auto;
+    min-width: 160px;
+    color-scheme: light;
+}
+
+html[data-theme="dark"] .diary-date-bar input { color-scheme: dark; }
+.date-hint { color: var(--muted); font-size: 0.8rem; }
+.date-picker { position: relative; width: 180px; max-width: 100%; }
+.statistics-date-field .date-picker { width: 100%; min-width: 0; }
+.date-picker > input[type="text"] { width: 100%; min-width: 0; padding-right: 40px; }
+.date-picker .date-picker-native {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.date-picker-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 38px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 0 12px 12px 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+.date-picker-button:hover:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
+.date-picker-button:disabled { opacity: 0.5; cursor: default; }
+.entry-actions, .archive-entry-actions, .favorite-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.archive-entry-actions, .favorite-actions { flex-wrap: wrap; }
+.favorite-button {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.favorite-button:hover:not(:disabled) { background: var(--accent-soft); }
+.favorite-button:disabled { opacity: 0.65; cursor: default; }
+.favorites-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.favorites-list > .empty-state { grid-column: 1 / -1; }
+.favorite-card { padding: 24px; }
+.favorite-card h2 { overflow-wrap: anywhere; }
+.favorite-macros { line-height: 1.8; font-size: 0.9rem; }
+.favorite-weight { display: grid; gap: 8px; margin-top: 16px; }
+.favorite-weight label { color: var(--muted); font-size: 0.8rem; }
+.favorite-weight input { width: min(100%, 180px); }
+.entry-quantity-form {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+.entry-quantity-form label, .entry-quantity-hint { font-size: 0.75rem; color: var(--muted); }
+.entry-quantity-hint { flex-basis: 100%; }
+.entry-quantity-controls { display: flex; align-items: center; gap: 5px; }
+.entry-quantity-controls input { width: 85px; min-height: 36px; padding: 6px 8px; }
+.entry-quantity-controls button {
+    width: 32px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.entry-quantity-controls button:hover:not(:disabled) { background: var(--accent-soft); }
+.entry-quantity-form button:disabled { opacity: 0.6; cursor: default; }
+.favorite-actions .primary-button { margin: 0; min-height: 42px; }
+
+@media (max-width: 700px) {
+    .navbar { flex-wrap: wrap; gap: 10px; padding-top: 12px; padding-bottom: 12px; }
+    .nav-actions { width: 100%; justify-content: space-between; }
+    .nav-links { flex-wrap: wrap; }
+    .favorites-list { grid-template-columns: 1fr; }
+    .date-hint { flex-basis: 100%; }
+    .entry-actions { grid-column: 2; grid-row: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

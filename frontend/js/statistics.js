@@ -1,18 +1,12 @@
 import { getPeriodStatistics } from "./api.js";
 import { showToast } from "./feedback.js";
+import { localToday, formatDate } from "./diary-date.js";
+import { readDateInput, setDateInput, validateDateInput } from "./date-input.js";
 
 const rangeButtons = document.querySelectorAll("[data-stat-range]");
 const customForm = document.getElementById("custom-date-range-form");
-const startInputs = [
-    document.getElementById("statistics-start-day"),
-    document.getElementById("statistics-start-month"),
-    document.getElementById("statistics-start-year"),
-];
-const endInputs = [
-    document.getElementById("statistics-end-day"),
-    document.getElementById("statistics-end-month"),
-    document.getElementById("statistics-end-year"),
-];
+const startInput = document.getElementById("statistics-start-date");
+const endInput = document.getElementById("statistics-end-date");
 const periodLabel = document.getElementById("statistics-period");
 const summary = document.getElementById("statistics-summary");
 const detail = document.getElementById("statistics-detail");
@@ -39,38 +33,15 @@ function dateDaysAgo(days) {
     return isoDate(value);
 }
 
-function europeanDateParts(isoValue) {
-    const [year, month, day] = isoValue.split("-");
-    return [day, month, year];
-}
-
-function parseEuropeanDate(parts) {
-    const [day, month, year] = parts.map((input) => input.value.trim());
-    if (!/^\d{1,2}$/.test(day) || !/^\d{1,2}$/.test(month) || !/^\d{4}$/.test(year)) return null;
-    const paddedDay = day.padStart(2, "0");
-    const paddedMonth = month.padStart(2, "0");
-    const parsed = new Date(Number(year), Number(paddedMonth) - 1, Number(paddedDay), 12);
-    if (
-        parsed.getFullYear() !== Number(year)
-        || parsed.getMonth() !== Number(paddedMonth) - 1
-        || parsed.getDate() !== Number(paddedDay)
-    ) return null;
-    return `${parsed.getFullYear()}-${paddedMonth}-${paddedDay}`;
-}
-
 function selectedDates() {
     if (selectedRange === "month") return { start: dateDaysAgo(29), end: dateDaysAgo(0) };
     if (selectedRange === "custom") {
         return {
-            start: parseEuropeanDate(startInputs),
-            end: parseEuropeanDate(endInputs),
+            start: readDateInput(startInput),
+            end: readDateInput(endInput),
         };
     }
     return { start: dateDaysAgo(6), end: dateDaysAgo(0) };
-}
-
-function formatDate(value) {
-    return europeanDateParts(value).join("/");
 }
 
 function renderSummary(data) {
@@ -101,13 +72,14 @@ function updateRangeControls() {
 }
 
 export async function loadStatistics() {
+    if (selectedRange === "custom" && (!validateDateInput(startInput) || !validateDateInput(endInput))) return;
     const { start, end } = selectedDates();
     if (!start || !end) {
-        showToast("Use the date format DD/MM/YYYY", "error");
+        showToast("Choose a start and end date", "error");
         return;
     }
     if (start > end) {
-        showToast("Choose an end date after the start date", "error");
+        showToast("Choose an end date on or after the start date", "error");
         return;
     }
 
@@ -121,27 +93,9 @@ export async function loadStatistics() {
 }
 
 export function initStatistics() {
-    europeanDateParts(dateDaysAgo(6)).forEach((value, index) => { startInputs[index].value = value; });
-    europeanDateParts(dateDaysAgo(0)).forEach((value, index) => { endInputs[index].value = value; });
+    setDateInput(startInput, dateDaysAgo(6));
+    setDateInput(endInput, localToday());
     updateRangeControls();
-
-    [startInputs, endInputs].forEach((inputs) => {
-        inputs.forEach((input, index) => {
-            input.addEventListener("input", () => {
-                const maximumLength = index === 2 ? 4 : 2;
-                input.value = input.value.replace(/\D/g, "").slice(0, maximumLength);
-                if (input.value.length === maximumLength) inputs[index + 1]?.focus();
-            });
-            input.addEventListener("keydown", (event) => {
-                if (event.key === "Backspace" && !input.value) inputs[index - 1]?.focus();
-            });
-            if (index < 2) {
-                input.addEventListener("blur", () => {
-                    if (/^\d$/.test(input.value)) input.value = input.value.padStart(2, "0");
-                });
-            }
-        });
-    });
 
     rangeButtons.forEach((button) => {
         button.addEventListener("click", () => {

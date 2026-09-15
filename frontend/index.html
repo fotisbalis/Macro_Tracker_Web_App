@@ -71,6 +71,7 @@
             <div class="nav-links">
                 <a href="#home" data-page="home" class="active">Home</a>
                 <a href="#archive" data-page="archive">Archive</a>
+                <a href="#favorites" data-page="favorites">Favorites</a>
                 <a href="#statistics" data-page="statistics">Statistics</a>
                 <a href="#user" data-page="user">User</a>
             </div>
@@ -87,7 +88,7 @@
             <header class="page-heading">
                 <div>
                     <p class="eyebrow">Daily overview</p>
-                    <h1 id="home-title">Track today, simply.</h1>
+                    <h1 id="home-title">Your food diary.</h1>
                     <p id="today-label" class="page-subtitle">Loading your day…</p>
                 </div>
                 <button id="ai-settings-button" class="provider-badge" type="button" aria-haspopup="dialog" aria-controls="ai-settings-dialog">
@@ -96,7 +97,13 @@
                 </button>
             </header>
 
-            <div id="macro-summary" class="macro-grid" aria-label="Today's macro totals"></div>
+            <div class="diary-date-bar">
+                <label for="diary-date">Diary date</label>
+                <input id="diary-date" type="date" required>
+                <button id="diary-today" class="range-button" type="button">Today</button>
+                <span id="diary-date-hint" class="date-hint">View and add foods for this day.</span>
+            </div>
+            <div id="macro-summary" class="macro-grid" aria-label="Selected day's macro totals"></div>
 
             <div class="home-grid">
                 <section class="panel log-panel" aria-labelledby="log-food-title">
@@ -182,6 +189,24 @@
             </div>
         </section>
 
+        <section id="favorites" class="page" aria-labelledby="favorites-title">
+            <header class="page-heading compact-heading">
+                <div>
+                    <p class="eyebrow">Your regulars</p>
+                    <h1 id="favorites-title">Favorite foods</h1>
+                    <p class="page-subtitle">Save foods from your diary or archive, then choose a portion to log again.</p>
+                </div>
+                <span id="favorites-count" class="count-badge">0 favorites</span>
+            </header>
+            <div class="diary-date-bar">
+                <label for="favorites-date">Add foods to</label>
+                <input id="favorites-date" type="date" required>
+                <button id="favorites-today" class="range-button" type="button">Today</button>
+                <span class="date-hint"></span>
+            </div>
+            <div id="favorites-list" class="favorites-list" aria-live="polite"></div>
+        </section>
+
         <section id="statistics" class="page" aria-labelledby="statistics-title">
             <header class="page-heading compact-heading">
                 <div>
@@ -202,26 +227,14 @@
                 </div>
 
                 <form id="custom-date-range-form" class="custom-date-range-form" hidden>
-                    <fieldset class="date-parts-group">
-                        <legend>Start date</legend>
-                        <div class="date-parts">
-                            <input id="statistics-start-day" type="text" inputmode="numeric" autocomplete="off" placeholder="DD" pattern="\d{1,2}" maxlength="2" aria-label="Start date day" required>
-                            <span aria-hidden="true">/</span>
-                            <input id="statistics-start-month" type="text" inputmode="numeric" autocomplete="off" placeholder="MM" pattern="\d{1,2}" maxlength="2" aria-label="Start date month" required>
-                            <span aria-hidden="true">/</span>
-                            <input id="statistics-start-year" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY" pattern="\d{4}" maxlength="4" aria-label="Start date year" required>
-                        </div>
-                    </fieldset>
-                    <fieldset class="date-parts-group">
-                        <legend>End date</legend>
-                        <div class="date-parts">
-                            <input id="statistics-end-day" type="text" inputmode="numeric" autocomplete="off" placeholder="DD" pattern="\d{1,2}" maxlength="2" aria-label="End date day" required>
-                            <span aria-hidden="true">/</span>
-                            <input id="statistics-end-month" type="text" inputmode="numeric" autocomplete="off" placeholder="MM" pattern="\d{1,2}" maxlength="2" aria-label="End date month" required>
-                            <span aria-hidden="true">/</span>
-                            <input id="statistics-end-year" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY" pattern="\d{4}" maxlength="4" aria-label="End date year" required>
-                        </div>
-                    </fieldset>
+                    <label class="statistics-date-field" for="statistics-start-date">
+                        <span>Start date</span>
+                        <input id="statistics-start-date" type="date" required>
+                    </label>
+                    <label class="statistics-date-field" for="statistics-end-date">
+                        <span>End date</span>
+                        <input id="statistics-end-date" type="date" required>
+                    </label>
                     <button class="primary-button" type="submit">Apply range</button>
                 </form>
             </section>

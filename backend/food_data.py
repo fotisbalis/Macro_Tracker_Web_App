@@ -6,12 +6,18 @@ except ImportError:
     from models import FoodEntry, User
 
 
+def quantity_values(food) -> dict:
+    # Older entries used zero grams to represent an unweighed portion.
+    return {"quantity": food.quantity or 1, "unit": food.unit if food.quantity else "portion"}
+
+
 def serialize_entry(entry: FoodEntry) -> dict:
+    portion = quantity_values(entry)
     return {
         "entry_id": entry.entry_id,
         "food_name": entry.food_name,
-        "quantity": round(entry.quantity, 1),
-        "unit": entry.unit,
+        "quantity": round(portion["quantity"], 1),
+        "unit": portion["unit"],
         "calories": round(entry.calories, 1),
         "protein": round(entry.protein, 1),
         "carbs": round(entry.carbs, 1),
@@ -52,4 +58,3 @@ def group_entries_by_day(entries: list) -> list:
         }
         for day, day_entries in sorted(grouped.items(), reverse=True)
     ]
-

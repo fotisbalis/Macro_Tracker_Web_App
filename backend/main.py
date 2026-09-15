@@ -17,6 +17,7 @@ try:
     from .archive import router as archive_router
     from .database import initialize_database
     from .foods import router as foods_router
+    from .favorites import router as favorites_router
     from .profiles import router as profiles_router
     from .services.provider import is_ai_active
     from .users import router as users_router
@@ -25,6 +26,7 @@ except ImportError:
     from archive import router as archive_router
     from database import initialize_database
     from foods import router as foods_router
+    from favorites import router as favorites_router
     from profiles import router as profiles_router
     from services.provider import is_ai_active
     from users import router as users_router
@@ -48,6 +50,7 @@ initialize_database()
 app.include_router(ai_settings_router)
 app.include_router(profiles_router)
 app.include_router(foods_router)
+app.include_router(favorites_router)
 app.include_router(archive_router)
 app.include_router(users_router)
 

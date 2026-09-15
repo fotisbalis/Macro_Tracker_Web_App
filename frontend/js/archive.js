@@ -1,5 +1,7 @@
 import { addArchivedFoodToToday, getArchive } from "./api.js";
 import { showToast } from "./feedback.js";
+import { createFavoriteButton } from "./favorite-button.js";
+import { formatDate } from "./diary-date.js";
 
 const archiveList = document.getElementById("archive-list");
 
@@ -8,11 +10,6 @@ function localTodayKey() {
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
     return `${today.getFullYear()}-${month}-${day}`;
-}
-
-function formatDate(value) {
-    return new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-        .format(new Date(`${value}T12:00:00`));
 }
 
 function createDay(day) {
@@ -41,13 +38,16 @@ function createDay(day) {
         row.className = "archive-entry";
         const name = document.createElement("span");
         const sourceLabel = entry.source === "manual" ? "manual entry" : "AI estimate";
-        const quantityLabel = entry.quantity === 0 ? "N/A" : `${entry.quantity}${entry.unit}`;
+        const quantityLabel = entry.unit === "portion" ? `${entry.quantity} ${entry.quantity === 1 ? "portion" : "portions"}` : `${entry.quantity}${entry.unit}`;
         name.innerHTML = `<strong></strong><small>${quantityLabel} | ${sourceLabel}</small>`;
         name.querySelector("strong").textContent = entry.food_name;
         const macros = document.createElement("span");
         macros.className = "archive-entry-macros";
         macros.textContent = `${entry.calories} kcal · P ${entry.protein}g · C ${entry.carbs}g · F ${entry.fat}g`;
         row.append(name, macros);
+        const actions = document.createElement("div");
+        actions.className = "archive-entry-actions";
+        actions.append(createFavoriteButton(entry));
         if (isPreviousDay) {
             const addButton = document.createElement("button");
             addButton.className = "archive-add-button";
@@ -55,8 +55,9 @@ function createDay(day) {
             addButton.dataset.addTodayId = entry.entry_id;
             addButton.setAttribute("aria-label", `Add ${entry.food_name} to today's totals`);
             addButton.textContent = "Add to today's totals";
-            row.append(addButton);
+            actions.append(addButton);
         }
+        row.append(actions);
         details.append(row);
     });
 

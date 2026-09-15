@@ -18,5 +18,5 @@ export function initNavigation({ onNavigate }) {
     });
 
     const requested = window.location.hash.slice(1);
-    if (["home", "archive", "statistics", "user"].includes(requested)) showPage(requested);
+    if (["home", "archive", "favorites", "statistics", "user"].includes(requested)) showPage(requested);
 }

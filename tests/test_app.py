@@ -166,7 +166,8 @@ def test_manual_food_uses_defaults_and_bypasses_ai(monkeypatch):
     assert added.status_code == 200
     entry = added.json()["entry"]
     assert entry["food_name"].startswith("manual_")
-    assert entry["quantity"] == 0
+    assert entry["quantity"] == 1
+    assert entry["unit"] == "portion"
     assert entry["source"] == "manual"
     assert entry["calories"] == 640
     assert entry["protein"] == 42.5
@@ -279,8 +280,253 @@ def test_period_statistics_returns_daily_averages_for_selected_dates():
 
 def test_sqlite_schema_contains_no_authentication_or_session_fields():
     schema = inspect(engine)
-    assert set(schema.get_table_names()) == {"food_entries", "users"}
+    assert set(schema.get_table_names()) == {"food_entries", "users", "favorite_foods"}
     user_columns = {column["name"] for column in schema.get_columns("users")}
     food_columns = {column["name"] for column in schema.get_columns("food_entries")}
     assert {"email", "hashed_password", "user_type"}.isdisjoint(user_columns)
     assert "session_id" not in food_columns
+
+
+def test_previous_day_manual_and_ai_entries_and_date_validation(monkeypatch):
+    install_test_ai(monkeypatch)
+    client = TestClient(app)
+    create_profile(client)
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    manual = {"food_name": "Oats", "quantity": 100, "calories": 300,
+              "protein": 10, "carbs": 50, "fat": 5, "logged_on": yesterday}
+    assert client.post("/foods/manual", json=manual).status_code == 200
+    ai = {"food_name": "Chicken", "quantity": 100, "logged_on": yesterday}
+    assert client.post("/foods/analyze", json=ai).status_code == 200
+    day = client.get(f"/days/{yesterday}").json()
+    assert day["date"] == yesterday
+    assert len(day["entries"]) == 2
+    assert day["totals"]["calories"] == 500
+    assert client.get("/days/today").json()["entries"] == []
+    assert client.get(f"/days/{tomorrow}").status_code == 422
+    assert client.get("/days/not-a-date").status_code == 422
+    for path, payload in [("/foods/manual", manual), ("/foods/analyze", ai)]:
+        assert client.post(path, json={**payload, "logged_on": tomorrow}).status_code == 422
+        assert client.post(path, json={**payload, "logged_on": "invalid"}).status_code == 422
+    create_profile(client, "Other profile")
+    assert client.get(f"/days/{yesterday}").json()["entries"] == []
+
+
+def test_favorites_survive_entry_deletion_and_reuse_without_ai(monkeypatch):
+    async def fail_if_called(*args):
+        raise AssertionError("Favorites must reuse saved macros without AI")
+
+    monkeypatch.setattr("backend.foods.ai_service.analyze_food", fail_if_called)
+    client = TestClient(app)
+    create_profile(client)
+    entry = client.post("/foods/manual", json={
+        "food_name": "Regular breakfast", "quantity": 250, "calories": 400,
+        "protein": 30, "carbs": 50, "fat": 9,
+    }).json()["entry"]
+    path = f"/favorites/from-entry/{entry['entry_id']}"
+    saved = client.post(path)
+    assert saved.status_code == 200
+    favorite = saved.json()["favorite"]
+    assert client.post(path).json()["favorite"] == favorite
+    assert len(client.get("/favorites").json()["favorites"]) == 1
+    assert client.delete(f"/foods/{entry['entry_id']}").status_code == 200
+    assert client.get("/favorites").json()["favorites"] == [favorite]
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    log_path = f"/favorites/{favorite['favorite_id']}/log"
+    for logged_on in (yesterday, date.today().isoformat()):
+        response = client.post(log_path, json={"logged_on": logged_on})
+        assert response.status_code == 200
+        copied = response.json()["entry"]
+        assert copied["logged_on"] == logged_on
+        for field in ("food_name", "quantity", "unit", "calories", "protein", "carbs", "fat", "source"):
+            assert copied[field] == entry[field]
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    assert client.post(log_path, json={"logged_on": tomorrow}).status_code == 422
+    assert client.post(log_path, json={"logged_on": "invalid"}).status_code == 422
+    assert client.delete(f"/favorites/{favorite['favorite_id']}").status_code == 200
+    assert client.get("/favorites").json()["favorites"] == []
+    assert client.post(log_path, json={}).status_code == 404
+    assert len(client.get("/days/today").json()["entries"]) == 1
+    assert len(client.get(f"/days/{yesterday}").json()["entries"]) == 1
+
+
+def test_favorites_require_profile_and_are_isolated():
+    client = TestClient(app)
+    assert client.get("/favorites").status_code == 409
+    first = create_profile(client)
+    entry = client.post("/foods/manual", json={
+        "calories": 100, "protein": 10, "carbs": 10, "fat": 2,
+    }).json()["entry"]
+    favorite = client.post(f"/favorites/from-entry/{entry['entry_id']}").json()["favorite"]
+    create_profile(client, "Second")
+    assert client.get("/favorites").json()["favorites"] == []
+    assert client.post(f"/favorites/from-entry/{entry['entry_id']}").status_code == 404
+    assert client.post(f"/favorites/{favorite['favorite_id']}/log", json={}).status_code == 404
+    assert client.delete(f"/favorites/{favorite['favorite_id']}").status_code == 404
+    client.post("/profiles/select", json={"user_id": first["user_id"]})
+    assert client.get("/favorites").json()["favorites"] == [favorite]
+
+
+def test_favorite_weight_scales_new_entries_without_changing_saved_food(monkeypatch):
+    async def fail_if_called(*args):
+        raise AssertionError("Scaling favorites must not call AI")
+
+    monkeypatch.setattr("backend.foods.ai_service.analyze_food", fail_if_called)
+    client = TestClient(app)
+    create_profile(client)
+    original = client.post("/foods/manual", json={
+        "food_name": "Yogurt", "quantity": 200, "calories": 300,
+        "protein": 20, "carbs": 40, "fat": 10,
+    }).json()["entry"]
+    favorite = client.post(f"/favorites/from-entry/{original['entry_id']}").json()["favorite"]
+    path = f"/favorites/{favorite['favorite_id']}/log"
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    for quantity, expected_macros in (
+        (100, [150, 10, 20, 5]),
+        (400, [600, 40, 80, 20]),
+        (125.5, [188.3, 12.6, 25.1, 6.3]),
+    ):
+        response = client.post(path, json={"quantity": quantity, "logged_on": yesterday})
+        assert response.status_code == 200
+        entry = response.json()["entry"]
+        assert entry["quantity"] == quantity
+        assert entry["logged_on"] == yesterday
+        assert [entry[field] for field in ("calories", "protein", "carbs", "fat")] == expected_macros
+    assert client.get("/favorites").json()["favorites"] == [favorite]
+    assert client.get("/days/today").json()["entries"] == [original]
+    for quantity in (0, -10, 5001, "not-a-weight", "NaN", "Infinity"):
+        assert client.post(path, json={"quantity": quantity}).status_code == 422
+    assert len(client.get(f"/days/{yesterday}").json()["entries"]) == 3
+    assert len(client.get("/days/today").json()["entries"]) == 1
+
+
+def test_favorite_without_weight_uses_whole_portion_counts():
+    client = TestClient(app)
+    create_profile(client)
+    original = client.post("/foods/manual", json={
+        "food_name": "Quick macros", "calories": 300, "protein": 20, "carbs": 40, "fat": 10,
+    }).json()["entry"]
+    favorite = client.post(f"/favorites/from-entry/{original['entry_id']}").json()["favorite"]
+    path = f"/favorites/{favorite['favorite_id']}/log"
+    for quantity in (0, 0.5, 1.5, -1):
+        assert client.post(path, json={"quantity": quantity}).status_code == 422
+    for payload in ({}, {"quantity": None}):
+        response = client.post(path, json=payload)
+        assert response.status_code == 200
+        entry = response.json()["entry"]
+        assert entry["quantity"] == 1
+        assert entry["unit"] == "portion"
+        assert entry["calories"] == 300
+    entry = client.post(path, json={"quantity": 3}).json()["entry"]
+    assert entry["quantity"] == 3
+    assert entry["unit"] == "portion"
+    assert entry["calories"] == 900
+    assert entry["protein"] == 60
+    assert client.get("/favorites").json()["favorites"] == [favorite]
+
+
+def test_diary_quantity_edits_scale_in_place_and_preserve_precision(monkeypatch):
+    async def fail_if_called(*args):
+        raise AssertionError("Quantity edits must not call AI")
+
+    monkeypatch.setattr("backend.foods.ai_service.analyze_food", fail_if_called)
+    client = TestClient(app)
+    create_profile(client)
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    original = client.post("/foods/manual", json={
+        "food_name": "Oats", "quantity": 200, "calories": 300,
+        "protein": 20, "carbs": 40, "fat": 10, "logged_on": yesterday,
+    }).json()["entry"]
+    favorite = client.post(f"/favorites/from-entry/{original['entry_id']}").json()["favorite"]
+    path = f"/foods/{original['entry_id']}/quantity"
+    for quantity, expected in (
+        (400, [600, 40, 80, 20]),
+        (100, [150, 10, 20, 5]),
+        (1, [1.5, 0.1, 0.2, 0.1]),
+        (200, [300, 20, 40, 10]),
+        (125.4, [188.1, 12.5, 25.1, 6.3]),
+    ):
+        response = client.patch(path, json={"quantity": quantity})
+        assert response.status_code == 200
+        data = response.json()
+        entry = data["entry"]
+        assert entry["quantity"] == quantity
+        for field in ("entry_id", "food_name", "source", "unit", "logged_on", "created_at"):
+            assert entry[field] == original[field]
+        assert [entry[field] for field in ("calories", "protein", "carbs", "fat")] == expected
+        assert data["totals"] == {field: entry[field] for field in ("calories", "protein", "carbs", "fat")}
+    assert client.get("/days/today").json()["entries"] == []
+    assert client.get(f"/days/{yesterday}").json()["entries"] == [entry]
+    assert client.get("/archive").json()["days"][0]["entries"] == [entry]
+    statistics = client.get(f"/statistics?start_date={yesterday}&end_date={yesterday}").json()
+    assert statistics["entry_count"] == 1
+    assert statistics["totals"] == data["totals"]
+    assert client.get("/favorites").json()["favorites"] == [favorite]
+
+
+def test_diary_quantity_validation_and_profile_isolation():
+    client = TestClient(app)
+    assert client.patch("/foods/1/quantity", json={"quantity": 100}).status_code == 409
+    first = create_profile(client)
+    original = client.post("/foods/manual", json={
+        "food_name": "Meal", "quantity": 200, "calories": 300,
+        "protein": 20, "carbs": 40, "fat": 10,
+    }).json()["entry"]
+    path = f"/foods/{original['entry_id']}/quantity"
+    for quantity in (0, -10, 5001, 0.01, 10.55, None, "NaN", "Infinity", "invalid"):
+        assert client.patch(path, json={"quantity": quantity}).status_code == 422
+    assert client.patch(path, json={}).status_code == 422
+    assert client.patch("/foods/99999/quantity", json={"quantity": 100}).status_code == 404
+    create_profile(client, "Other user")
+    assert client.patch(path, json={"quantity": 100}).status_code == 404
+    client.post("/profiles/select", json={"user_id": first["user_id"]})
+    assert client.get("/days/today").json()["entries"] == [original]
+
+
+def test_unweighed_diary_entry_scales_by_whole_portion_counts():
+    client = TestClient(app)
+    create_profile(client)
+    original = client.post("/foods/manual", json={
+        "food_name": "Unweighed meal", "calories": 300, "protein": 20, "carbs": 40, "fat": 10,
+    }).json()["entry"]
+    path = f"/foods/{original['entry_id']}/quantity"
+    assert original["quantity"] == 1
+    assert original["unit"] == "portion"
+    for quantity in (2, 3, 1):
+        response = client.patch(path, json={"quantity": quantity})
+        assert response.status_code == 200
+        entry = response.json()["entry"]
+        assert entry["quantity"] == quantity
+        assert entry["unit"] == "portion"
+        for field in ("calories", "protein", "carbs", "fat"):
+            assert entry[field] == original[field] * quantity
+    for quantity in (0, 0.5, 1.5, -1):
+        assert client.patch(path, json={"quantity": quantity}).status_code == 422
+    assert client.get("/days/today").json()["entries"] == [original]
+
+
+def test_legacy_zero_weight_entries_and_favorites_behave_as_portions():
+    client = TestClient(app)
+    create_profile(client)
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    original = client.post("/foods/manual", json={
+        "food_name": "Legacy meal", "calories": 200, "protein": 10, "carbs": 30,
+        "fat": 5, "logged_on": yesterday,
+    }).json()["entry"]
+    favorite = client.post(f"/favorites/from-entry/{original['entry_id']}").json()["favorite"]
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE food_entries SET quantity=0, unit='g'"))
+        connection.execute(text("UPDATE favorite_foods SET quantity=0, unit='g'"))
+    assert client.get(f"/days/{yesterday}").json()["entries"] == [original]
+    assert client.get("/favorites").json()["favorites"] == [favorite]
+    assert client.post(f"/favorites/from-entry/{original['entry_id']}").json()["favorite"] == favorite
+    copied = client.post(f"/foods/{original['entry_id']}/add-to-today").json()["entry"]
+    assert copied["unit"] == "portion"
+    assert copied["quantity"] == 1
+    logged = client.post(f"/favorites/{favorite['favorite_id']}/log", json={"quantity": 3}).json()["entry"]
+    assert logged["unit"] == "portion"
+    assert logged["calories"] == 600
+    changed = client.patch(f"/foods/{original['entry_id']}/quantity", json={"quantity": 2}).json()["entry"]
+    assert changed["unit"] == "portion"
+    assert changed["quantity"] == 2
+    assert changed["calories"] == 400
